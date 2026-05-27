@@ -1,0 +1,317 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>DreamByte Chat</title>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+
+        body {
+            background: linear-gradient(135deg, #a1c4fd 0%, #c2e9fb 100%);
+            height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            overflow: hidden;
+        }
+
+        /* Contenedor Estilo Cristal (Glassmorphism) */
+        .chat-container {
+            width: 90%;
+            max-width: 600px;
+            height: 85vh;
+            background: rgba(255, 255, 255, 0.45);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.7);
+            border-radius: 20px;
+            box-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.15),
+                        inset 0 1px 0 rgba(255, 255, 255, 0.6);
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+
+        /* Cabecera Glossy */
+        .chat-header {
+            background: linear-gradient(to bottom, rgba(255,255,255,0.4) 0%, rgba(255,255,255,0.1) 50%, rgba(255,255,255,0) 51%, rgba(255,255,255,0.1) 100%);
+            border-bottom: 1px solid rgba(255, 255, 255, 0.4);
+            padding: 15px 20px;
+            text-align: center;
+            color: #1e40af;
+            text-shadow: 0 1px 1px rgba(255, 255, 255, 0.8);
+        }
+
+        .chat-header h2 {
+            font-weight: 600;
+            font-size: 1.4rem;
+            letter-spacing: 0.5px;
+        }
+
+        /* Área de Mensajes */
+        .chat-messages {
+            flex: 1;
+            padding: 20px;
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        /* Burbujas de Mensaje */
+        .message {
+            background: rgba(255, 255, 255, 0.7);
+            border: 1px solid rgba(255, 255, 255, 0.8);
+            padding: 10px 14px;
+            border-radius: 14px;
+            max-width: 80%;
+            align-self: flex-start;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+            animation: popIn 0.2s ease-out forwards;
+        }
+
+        .message.own {
+            background: linear-gradient(to bottom, #74b9ff 0%, #0984e3 100%);
+            color: white;
+            border: 1px solid #0984e3;
+            align-self: flex-end;
+            box-shadow: 0 2px 6px rgba(9, 132, 227, 0.3);
+        }
+
+        .message .username {
+            font-size: 0.75rem;
+            font-weight: bold;
+            margin-bottom: 4px;
+            color: #2980b9;
+        }
+
+        .message.own .username {
+            color: #e0f2fe;
+        }
+
+        .message img {
+            max-width: 100%;
+            border-radius: 8px;
+            margin-top: 5px;
+            border: 1px solid rgba(255,255,255,0.5);
+        }
+
+        /* Barra de Entrada */
+        .chat-input-area {
+            padding: 15px;
+            background: rgba(255, 255, 255, 0.3);
+            border-top: 1px solid rgba(255, 255, 255, 0.4);
+            display: flex;
+            gap: 10px;
+            align-items: center;
+        }
+
+        .chat-input-area input[type="text"] {
+            flex: 1;
+            padding: 10px 15px;
+            border: 1px solid rgba(0,0,0,0.15);
+            border-radius: 20px;
+            outline: none;
+            background: rgba(255, 255, 255, 0.8);
+            transition: all 0.2s;
+        }
+
+        .chat-input-area input[type="text"]:focus {
+            border-color: #3498db;
+            box-shadow: 0 0 8px rgba(52, 152, 219, 0.4);
+        }
+
+        /* Botón de Adjuntar Imagen */
+        .file-label {
+            cursor: pointer;
+            padding: 8px;
+            background: rgba(255,255,255,0.6);
+            border: 1px solid rgba(0,0,0,0.1);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: background 0.2s;
+        }
+        .file-label:hover { background: rgba(255,255,255,0.9); }
+        .file-label input { display: none; }
+
+        /* Botón Enviar Metálico/Glossy */
+        .btn-send {
+            padding: 10px 20px;
+            background: linear-gradient(to bottom, #2ecc71 0%, #27ae60 100%);
+            border: 1px solid #219653;
+            color: white;
+            font-weight: bold;
+            border-radius: 20px;
+            cursor: pointer;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            text-shadow: 0 -1px 0 rgba(0,0,0,0.2);
+        }
+        .btn-send:active {
+            background: linear-gradient(to bottom, #27ae60 0%, #2ecc71 100%);
+        }
+
+        @keyframes popIn {
+            from { transform: scale(0.9); opacity: 0; }
+            to { transform: scale(1); opacity: 1; }
+        }
+    </style>
+</head>
+<body>
+
+<div class="chat-container">
+    <div class="chat-header">
+        <h2>DreamByte Studios Live Chat</h2>
+    </div>
+
+    <div class="chat-messages" id="chatMessages">
+        </div>
+
+    <div class="chat-input-area">
+        <label class="file-label" title="Subir imagen">
+            📷
+            <input type="file" id="fileInput" accept="image/*">
+        </label>
+        <input type="text" id="messageInput" placeholder="Escribe un mensaje...">
+        <button class="btn-send" id="sendBtn">Enviar</button>
+    </div>
+</div>
+
+<script>
+    // 1. CONFIGURACIÓN DE SUPABASE (Reemplaza con tus datos reales)
+    const SUPABASE_URL = 'TU_SUPABASE_PROJECT_URL';
+    const SUPABASE_ANON_KEY = 'TU_SUPABASE_ANON_KEY';
+    
+    const supabase = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+    // Asignar un nombre aleatorio o pedirlo al entrar
+    const myUsername = localStorage.getItem('chat_user') || 'User_' + Math.floor(Math.random() * 1000);
+    if(!localStorage.getItem('chat_user')) localStorage.setItem('chat_user', myUsername);
+
+    const messagesContainer = document.getElementById('chatMessages');
+    const messageInput = document.getElementById('messageInput');
+    const sendBtn = document.getElementById('sendBtn');
+    const fileInput = document.getElementById('fileInput');
+
+    // 2. CARGAR MENSAJES HISTÓRICOS
+    async function loadMessages() {
+        const { data, error } = await supabase
+            .from('messages')
+            .select('*')
+            .order('created_at', { ascending: true })
+            .limit(50);
+
+        if (error) return console.error('Error cargando mensajes:', error);
+        
+        messagesContainer.innerHTML = '';
+        data.forEach(msg => appendMessage(msg));
+        scrollToBottom();
+    }
+
+    // 3. RENDERIZAR UN MENSAJE EN PANTALLA
+    function appendMessage(msg) {
+        const isOwn = msg.profile_name === myUsername;
+        const msgDiv = document.createElement('div');
+        msgDiv.classList.add('message');
+        if (isOwn) msgDiv.classList.add('own');
+
+        // Validar si el contenido es un enlace a una imagen subida por nosotros
+        let contentHTML = `<div>${escapeHTML(msg.content)}</div>`;
+        if (msg.content.startsWith('http') && (msg.content.includes('/storage/v1/object/public/'))) {
+            contentHTML = `<img src="${msg.content}" alt="Imagen adjunta" onload="scrollToBottom()">`;
+        }
+
+        msgDiv.innerHTML = `
+            <div class="username">${escapeHTML(msg.profile_name)}</div>
+            ${contentHTML}
+        `;
+        messagesContainer.appendChild(msgDiv);
+    }
+
+    // 4. ESCUCHAR NUEVOS MENSAJES EN TIEMPO REAL
+    supabase
+        .channel('public:messages')
+        .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'messages' }, payload => {
+            appendMessage(payload.new);
+            scrollToBottom();
+        })
+        .subscribe();
+
+    // 5. FUNCIÓN PARA ENVIAR MENSAJES (TEXTO O URL DE IMAGEN)
+    async function sendMessage(contentText) {
+        if (!contentText.trim()) return;
+
+        const { error } = await supabase
+            .from('messages')
+            .insert([{ profile_name: myUsername, content: contentText }]);
+
+        if (error) console.error('Error al enviar:', error);
+    }
+
+    // EVENTOS DE LA INTERFAZ
+    sendBtn.addEventListener('click', () => {
+        sendMessage(messageInput.value);
+        messageInput.value = '';
+    });
+
+    messageInput.addEventListener('keypress', (e) => {
+        if (e.key === 'Enter') {
+            sendMessage(messageInput.value);
+            messageInput.value = '';
+        }
+    });
+
+    // 6. MANEJO DE SUBIDA DE IMÁGENES AL BUCKET
+    fileInput.addEventListener('change', async () => {
+        const file = fileInput.files[0];
+        if (!file) return;
+
+        // Nombre de archivo único usando la fecha actual
+        const fileExt = file.name.split('.').pop();
+        const fileName = `${Date.now()}.${fileExt}`;
+        const filePath = `${fileName}`;
+
+        // Subir al bucket que creamos en el SQL
+        const { data, error } = await supabase.storage
+            .from('chat-attachments')
+            .upload(filePath, file);
+
+        if (error) {
+            alert('Error al subir imagen');
+            return console.error(error);
+        }
+
+        // Obtener la URL pública del archivo subido
+        const { data: { publicUrl } } = supabase.storage
+            .from('chat-attachments')
+            .getPublicUrl(filePath);
+
+        // Enviar la URL de la imagen como si fuera un mensaje del chat
+        sendMessage(publicUrl);
+        fileInput.value = ''; // Limpiar el input
+    });
+
+    // UTILIDADES
+    function scrollToBottom() {
+        messagesContainer.scrollTop = messagesContainer.scrollHeight;
+    }
+
+    function escapeHTML(str) {
+        return str.replace(/[&<>'"]/g, 
+            tag => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', "'": '&#39;', '"': '&quot;' }[tag] || tag)
+        );
+    }
+
+    // Inicializar
+    loadMessages();
+</script>
+</body>
+</html>
