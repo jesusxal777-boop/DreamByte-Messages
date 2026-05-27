@@ -1,23 +1,15 @@
 document.addEventListener('DOMContentLoaded', async () => {
-    // Verificar si el usuario está logueado
+    // Verificamos sesión sin consultar ninguna tabla extra
     const { data: { session } } = await db.auth.getSession();
     if (!session) return location.href = 'index.html';
 
-    // Vincular botones
+    // Ahora los botones sí funcionarán porque no esperamos nada de la BD
     document.getElementById('btnSendMessage').onclick = async () => {
-        const input = document.getElementById('inMessage');
-        const { error } = await db.from('messages').insert([{ 
-            room_id: '00000000-0000-0000-0000-000000000000', 
-            content: input.value,
-            user_id: session.user.id 
-        }]);
-        if (!error) input.value = '';
+        const content = document.getElementById('inMessage').value;
+        const { error } = await db.from('messages').insert([
+            { content: content, user_id: session.user.id } 
+        ]);
+        if (error) alert("Error: " + error.message);
+        else document.getElementById('inMessage').value = '';
     };
-
-    // Suscripción Realtime
-    db.channel('public:messages')
-      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'messages' }, (payload) => {
-          console.log("Nuevo mensaje:", payload.new);
-          // Aquí iría la función para pintar el mensaje en pantalla
-      }).subscribe();
 });
