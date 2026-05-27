@@ -1,51 +1,48 @@
-// Esperamos a que el DOM esté listo
-document.addEventListener('DOMContentLoaded', async () => {
-    const feed = document.getElementById('containerMessages');
+// Usamos una función autoejecutable para que no haya conflictos
+(async function() {
+    console.log("Iniciando lógica de chat...");
+
+    // Esperar a que el DOM esté completamente cargado
+    if (document.readyState === 'loading') {
+        await new Promise(resolve => document.addEventListener('DOMContentLoaded', resolve));
+    }
+
+    const btn = document.getElementById('btnSendMessage');
     const input = document.getElementById('inMessage');
-    const btnSend = document.getElementById('btnSendMessage');
-    
-    // 1. Verificar sesión
-    const { data: { session } } = await db.auth.getSession();
-    if (!session) return location.href = 'index.html';
+    const container = document.getElementById('containerMessages');
 
-    // 2. Función para cargar mensajes iniciales
-    async function loadMessages() {
-        const { data, error } = await db
-            .from('messages')
-            .select('*')
-            .order('created_at', { ascending: true });
-        
-        if (error) console.error("Error al cargar:", error);
-        else {
-            feed.innerHTML = '';
-            data.forEach(msg => appendMessage(msg));
+    if (!btn) {
+        alert("Error: No encontré el botón btnSendMessage");
+        return;
+    }
+
+    // Configurar el evento de envío
+    btn.addEventListener('click', async () => {
+        const text = input.value.trim();
+        if (!text) return;
+
+        try {
+            // Intentar insertar en Supabase
+            const { error } = await db.from('messages').insert([
+                { content: text, user_id: (await db.auth.getUser()).data.user.id }
+            ]);
+
+            if (error) {
+                alert("Error de Supabase: " + error.message);
+            } else {
+                input.value = ''; // Limpiar input si tuvo éxito
+            }
+        } catch (e) {
+            alert("Error al conectar: " + e.message);
         }
-    }
+    });
 
-    // 3. Función para pintar un mensaje en pantalla
-    function appendMessage(msg) {
-        const div = document.createElement('div');
-        div.className = 'bubble';
-        div.innerText = msg.content;
-        feed.appendChild(div);
-        feed.scrollTop = feed.scrollHeight;
-    }
-
-    // 4. Lógica de Enviar
-    btnSend.onclick = async () => {
-        if (!input.value.trim()) return;
-        const { error } = await db.from('messages').insert([
-            { content: input.value, user_id: session.user.id, room_id: 'global' }
-        ]);
-        if (!error) input.value = '';
-    };
-
-    // 5. Motor Realtime (Aquí ocurre la magia)
-    db.channel('realtime-chat')
+    // Realtime básico
+    db.channel('public:messages')
       .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'messages' }, (payload) => {
-          appendMessage(payload.new);
+          const div = document.createElement('div');
+          div.innerText = payload.new.content;
+          container.appendChild(div);
       })
       .subscribe();
-
-    loadMessages();
-});
+})();
