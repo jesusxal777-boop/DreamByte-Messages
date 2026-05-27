@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>DreamByte Network - Registro</title>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <style>
+        :root {
+            --bg-gradient: linear-gradient(135deg, #3a7bd5 0%, #3a6073 100%);
+            --glass-bg: rgba(255, 255, 255, 0.22);
+            --glass-blur: blur(20px);
+            --glass-border: 1px solid rgba(255, 255, 255, 0.4);
+            --text-light: #ffffff;
+        }
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Segoe UI', system-ui, sans-serif; }
+        body { background: var(--bg-gradient); height: 100vh; display: flex; justify-content: center; align-items: center; padding: 20px; }
+        
+        .auth-box {
+            width: 100%; max-width: 380px; padding: 35px; flex-direction: column; display: flex; gap: 20px;
+            background: var(--glass-bg); backdrop-filter: var(--glass-blur); -webkit-backdrop-filter: var(--glass-blur);
+            border: var(--glass-border); border-radius: 16px; box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.2);
+        }
+        h1 { text-align: center; font-size: 1.7rem; font-weight: 700; color: var(--text-light); text-shadow: 0 2px 4px rgba(0,0,0,0.2); }
+        p { text-align: center; font-size: 0.9rem; color: var(--text-light); opacity: 0.8; margin-top: -10px; }
+        .field { display: flex; flex-direction: column; gap: 5px; }
+        label { font-size: 0.8rem; font-weight: 600; color: var(--text-light); }
+        input { padding: 12px; border: 1px solid rgba(0,0,0,0.1); border-radius: 8px; background: rgba(255, 255, 255, 0.85); outline: none; font-size: 0.95rem; }
+        
+        .btn { padding: 12px; border: none; border-radius: 8px; font-weight: bold; cursor: pointer; text-align: center; background: linear-gradient(to bottom, #5cd68a, #27ae60); color: white; border: 1px solid #1e8449; }
+        .btn:active { transform: scale(0.98); }
+        .toggle-link { text-align: center; font-size: 0.85rem; color: var(--text-light); cursor: pointer; text-decoration: underline; opacity: 0.9; }
+    </style>
+</head>
+<body>
+
+    <div class="auth-box">
+        <h1>Crear Cuenta Core</h1>
+        <p>Asigna tu firma digital en el ecosistema</p>
+
+        <div class="field">
+            <label>Nombre de Usuario público</label>
+            <input type="text" id="inUsername" placeholder="Ej: Dev_Kris">
+        </div>
+        <div class="field">
+            <label>Correo Electrónico</label>
+            <input type="email" id="inEmail" placeholder="correo@dreambyte.com">
+        </div>
+        <div class="field">
+            <label>Contraseña</label>
+            <input type="password" id="inPassword" placeholder="••••••••">
+        </div>
+
+        <button class="btn" id="btnRegister">Dar de Alta</button>
+        <div class="toggle-link" onclick="location.href='index.html'">¿Ya tienes cuenta? Inicia sesión aquí</div>
+    </div>
+
+<script>
+    const db = supabase.createClient('https://qynkgbgxavjgmvnskbsd.supabase.co', 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InF5bmtnYmd4YXZqZ212bnNrYnNkIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzk4NDQ5NzMsImV4cCI6MjA5NTQyMDk3M30.2lbtOLD-pgKYYrJiNsaOIsw3oM3jaZUgccDA-68Y6JI');
+
+    document.getElementById('btnRegister').addEventListener('click', async () => {
+        const username = document.getElementById('inUsername').value.trim();
+        const email = document.getElementById('inEmail').value.trim();
+        const password = document.getElementById('inPassword').value.trim();
+
+        if (!username || !email || !password) return alert('Completa todos los campos.');
+        if (username.length < 3) return alert('El nombre de usuario es demasiado corto.');
+
+        const { error } = await db.auth.signUp({
+            email, password, options: { data: { username } }
+        });
+
+        if (error) {
+            alert('Error al registrar: ' + error.message);
+        } else {
+            alert('¡Cuenta creada de forma exitosa! Redirigiendo al login...');
+            location.href = 'index.html';
+        }
+    });
+</script>
+</body>
+</html>
