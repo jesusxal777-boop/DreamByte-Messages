@@ -2,24 +2,61 @@
 <html lang="es">
 <head>
     <meta charset="UTF-8">
-    <title>Chat</title>
+    <title>DreamByte OS - Chat</title>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <style>
+        /* (Usa el CSS de antes) */
+    </style>
 </head>
 <body>
-    <div id="app">Cargando sistema...</div>
     <script>
-        const db = supabase.createClient('https://qynkgbgxavjgmvnskbsd.supabase.co', 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InF5bmtnYmd4YXZqZ212bnNrYnNkIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzk4NDQ5NzMsImV4cCI6MjA5NTQyMDk3M30.2lbtOLD-pgKYYrJiNsaOIsw3oM3jaZUgccDA-68Y6JI');
+        const db = supabase.createClient('URL', 'KEY');
+        let user = null;
+        let activeRoomId = null;
 
         async function init() {
             const { data: { session } } = await db.auth.getSession();
             if (!session) return location.href = 'index.html';
-            
-            document.getElementById('app').innerHTML = "<h1>Bienvenido al Chat</h1><button id='out'>Salir</button>";
-            document.getElementById('out').onclick = () => db.auth.signOut().then(() => location.href='index.html');
-            
-            // Aquí llamarías a tus funciones de renderRooms y selectRoom...
-            console.log("Sistema cargado correctamente");
+            user = session.user;
+
+            // 1. Conectar botones manualmente
+            document.getElementById('btnSendMessage').onclick = sendMessage;
+            document.getElementById('btnNewRoom').onclick = createRoom;
+
+            // 2. Cargar datos
+            await refreshRooms();
         }
+
+        async function sendMessage() {
+            const input = document.getElementById('inMessage');
+            const content = input.value.trim();
+            if (!content || !activeRoomId) return alert("Selecciona una sala");
+
+            try {
+                const { error } = await db.from('messages').insert([
+                    { room_id: activeRoomId, user_id: user.id, content: content }
+                ]);
+                if (error) throw error;
+                input.value = '';
+            } catch (err) {
+                console.error("Error al enviar mensaje:", err);
+                alert("Error: " + err.message);
+            }
+        }
+
+        async function createRoom() {
+            const name = prompt("Nombre de la sala:");
+            if (!name) return;
+            try {
+                const { error } = await db.from('rooms').insert([{ name: name }]);
+                if (error) throw error;
+                refreshRooms();
+            } catch (err) {
+                console.error("Error al crear sala:", err);
+                alert("No se pudo crear la sala.");
+            }
+        }
+
         init();
     </script>
 </body>
