@@ -290,6 +290,62 @@
     // --- 3. CAPA DE RENDERIZADO Y CONTROL DE INTERFAZ (UI) ---
     const UI = {
         dom: {
+            <script>
+    // --- 1. CONFIGURACIÓN & ESTADO GLOBAL ---
+    const CONFIG = {
+        url: 'https://qynkgbgxavjgmvnskbsd.supabase.co',
+        key: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InF5bmtnYmd4YXZqZ212bnNrYnNkIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzk4NDQ5NzMsImV4cCI6MjA5NTQyMDk3M30.2lbtOLD-pgKYYrJiNsaOIsw3oM3jaZUgccDA-68Y6JI'
+    };
+    
+    const db = supabase.createClient(CONFIG.url, CONFIG.key);
+
+    let state = {
+        isLogin: true,
+        user: null,
+        profile: null,
+        activeRoomId: null,
+        subMessages: null
+    };
+
+    // --- 2. CAPA DE SERVICIOS (API) ---
+    const Api = {
+        async login(email, password) {
+            return await db.auth.signInWithPassword({ email, password });
+        },
+        async register(email, password, username) {
+            return await db.auth.signUp({
+                email, password, options: { data: { username } }
+            });
+        },
+        async getProfile(uid) {
+            return await db.from('profiles').select('*').eq('id', uid).maybeSingle();
+        },
+        async fetchRooms() {
+            return await db.from('rooms').select('*').order('created_at', { ascending: true });
+        },
+        async createRoom(name, uid) {
+            return await db.from('rooms').insert([{ name, created_by: uid }]).select();
+        },
+        async fetchMessages(roomId) {
+            return await db.from('messages')
+                .select(`id, content, created_at, user_id, profiles(username)`)
+                .eq('room_id', roomId)
+                .order('created_at', { ascending: true });
+        },
+        async writeMessage(roomId, uid, content) {
+            return await db.from('messages').insert([{ room_id: roomId, user_id: uid, content }]);
+        },
+        async uploadFile(bucketPath, file) {
+            return await db.storage.from('chat-attachments').upload(bucketPath, file);
+        },
+        getPublicUrl(bucketPath) {
+            return db.storage.from('chat-attachments').getPublicUrl(bucketPath).data.publicUrl;
+        }
+    };
+
+    // --- 3. CAPA DE INTERFAZ DE USUARIO (UI) ---
+    const UI = {
+        dom: {
             authView: document.getElementById('viewAuth'),
             appView: document.getElementById('viewApp'),
             authTitle: document.getElementById('txtAuthTitle'),
@@ -308,14 +364,12 @@
         },
 
         init() {
-            this.dom.usernameField.style.display = "none"; // Por defecto login
+            this.dom.usernameField.style.display = "none";
             
-            // Listeners de Auth
             this.dom.authToggle.addEventListener('click', () => this.switchAuthMode());
             this.dom.authSubmit.addEventListener('click', () => Actions.handleAuthSubmit());
             document.getElementById('btnActionLogout').addEventListener('click', () => Actions.handleLogout());
 
-            // Listeners de App
             document.getElementById('btnNewRoom').addEventListener('click', () => Actions.handleCreateRoom());
             this.dom.sendBtn.addEventListener('click', () => Actions.handleSendMessage());
             this.dom.msgInput.addEventListener('keypress', (e) => { if(e.key === 'Enter') Actions.handleSendMessage(); });
@@ -345,7 +399,10 @@
                 const el = document.createElement('div');
                 el.classList.add('item-room');
                 if (room.id === state.activeRoomId) el.classList.add('active');
-                el.innerHTML = `<span>📁</span> <span>${this.escape(room.name)}</span>`;
+                
+                // Icono especial para el chat global
+                const icon = room.id === '00000000-0000-0000-0000-000000000000' ? '🌐' : '📁';
+                el.innerHTML = `<span>${icon}</span> <span>${this.escape(room.name)}</span>`;
                 el.addEventListener('click', () => Actions.handleSelectRoom(room));
                 this.dom.roomsContainer.appendChild(el);
             });
@@ -379,7 +436,7 @@
         escape(str) { return str.replace(/[&<>'"]/g, t => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', "'": '&#39;', '"': '&quot;' }[t] || t)); }
     };
 
-    // --- 4. CAPA DE ACCIONES DEL CONTROLADOR (CONTROLLER) ---
+    // --- 4. CAPA DE CONTROLADORES (ACTIONS) ---
     const Actions = {
         async appBoot() {
             const { data: { session } } = await db.auth.getSession();
@@ -392,8 +449,15 @@
                 UI.dom.authView.classList.remove('active');
                 UI.dom.appView.classList.add('active');
                 
-                this.refreshRoomsList();
+                // Cargar salas e ingresar directo al Chat Global por defecto
+                await this.refreshRoomsList();
                 this.listenRoomsGlobal();
+
+                // Entrar automáticamente a la sala Global estática
+                Actions.handleSelectRoom({
+                    id: '00000000-0000-0000-0000-000000000000',
+                    name: 'Chat Global 🌐'
+                });
             } else {
                 UI.dom.authView.classList.add('active');
                 UI.dom.appView.classList.remove('active');
@@ -415,7 +479,7 @@
                 if (username.length < 3) return alert('Usuario muy corto.');
                 const { error } = await Api.register(email, password, username);
                 if (error) return alert('Error de registro: ' + error.message);
-                alert('¡Firma creada! Ya puedes conectarte.');
+                alert('¡Cuenta creada con éxito! Ya puedes iniciar sesión.');
                 UI.switchAuthMode();
             }
         },
@@ -427,21 +491,31 @@
 
         listenRoomsGlobal() {
             db.channel('realtime-rooms')
-                .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'rooms' }, () => this.refreshRoomsList())
+                .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'rooms' }, () => {
+                    this.refreshRoomsList();
+                })
                 .subscribe();
         },
 
         async handleCreateRoom() {
             const name = prompt('Nombre del nuevo canal de operaciones:');
             if (!name || !name.trim()) return;
-            await Api.createRoom(name.trim(), state.user.id);
+            
+            const { data, error } = await Api.createRoom(name.trim(), state.user.id);
+            if (error) return alert('Error al crear sala: ' + error.message);
+            
+            // Forzar actualización inmediata local y seleccionar la nueva sala
+            await this.refreshRoomsList();
+            if (data && data[0]) {
+                this.handleSelectRoom(data[0]);
+            }
         },
 
         async handleSelectRoom(room) {
             state.activeRoomId = room.id;
-            this.refreshRoomsList(); // Refresca clases activas visuales
+            UI.renderRooms(await Api.fetchRooms().then(res => res.data || [])); // Actualizar clase activa instantánea
 
-            UI.dom.roomHeader.innerHTML = `<h2># ${UI.escape(room.name)}</h2><p>Terminal activa ID: ${room.id}</p>`;
+            UI.dom.roomHeader.innerHTML = `<h2># ${UI.escape(room.name)}</h2><p>ID de canal: ${room.id}</p>`;
             UI.dom.inputDeck.style.visibility = "visible";
 
             if (state.subMessages) db.removeChannel(state.subMessages);
@@ -485,9 +559,9 @@
         }
     };
 
-    // Lanzar ejecutor de interfaz y sesión al cargar el DOM
     UI.init();
     Actions.appBoot();
 </script>
+
 </body>
 </html>
