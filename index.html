@@ -4,8 +4,7 @@
     <meta charset="UTF-8"> 
     <link rel="stylesheet" href="style.css">
     <title>DreamByte Network - Login</title>
-    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2">
-    </script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 </head>
 <body>
     <div class="box">
@@ -15,16 +14,29 @@
         <button id="btnLogin">Conectarse</button>
         <p onclick="location.href='register.html'" style="cursor:pointer; margin-top:10px;">¿Nuevo? Regístrate</p>
     </div>
+
+    <script src="auth.js"></script>
+    
     <script>
-        const db = supabase.createClient('https://qynkgbgxavjgmvnskbsd.supabase.co', 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InF5bmtnYmd4YXZqZ212bnNrYnNkIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzk4NDQ5NzMsImV4cCI6MjA5NTQyMDk3M30.2lbtOLD-pgKYYrJiNsaOIsw3oM3jaZUgccDA-68Y6JI');
-        
         document.getElementById('btnLogin').onclick = async () => {
-            const { error } = await db.auth.signInWithPassword({
-                email: document.getElementById('inEmail').value,
-                password: document.getElementById('inPassword').value
-            });
-            if (error) alert(error.message);
-            else location.href = 'chat.html';
+            const email = document.getElementById('inEmail').value.trim();
+            const password = document.getElementById('inPassword').value.trim();
+
+            if (!email || !password) return alert("Rellena todo.");
+
+            try {
+                // Usamos la variable 'db' que viene de auth.js
+                const { data, error } = await db.auth.signInWithPassword({ email, password });
+                
+                if (error) {
+                    console.error("Error detallado:", error);
+                    alert("Error: " + error.message);
+                } else {
+                    window.location.href = 'chat.html';
+                }
+            } catch (err) {
+                alert("Error de conexión: " + err.message);
+            }
         };
     </script>
 </body>
