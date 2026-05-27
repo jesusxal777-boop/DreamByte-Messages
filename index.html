@@ -186,9 +186,9 @@
 </div>
 
 <script>
-    // 1. CONFIGURACIÓN DE SUPABASE (Reemplaza con tus datos reales)
-    const SUPABASE_URL = 'TU_SUPABASE_PROJECT_URL';
-    const SUPABASE_ANON_KEY = 'TU_SUPABASE_ANON_KEY';
+    // 1. CONFIGURACIÓN DE SUPABASE (Credenciales listas)
+    const SUPABASE_URL = 'https://qynkgbgxavjgmvnskbsd.supabase.co';
+    const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InF5bmtnYmd4YXZqZ212bnNrYnNkIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzk4NDQ5NzMsImV4cCI6MjA5NTQyMDk3M30.2lbtOLD-pgKYYrJiNsaOIsw3oM3jaZUgccDA-68Y6JI';
     
     const supabase = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
@@ -274,7 +274,6 @@
         const file = fileInput.files[0];
         if (!file) return;
 
-        // Nombre de archivo único usando la fecha actual
         const fileExt = file.name.split('.').pop();
         const fileName = `${Date.now()}.${fileExt}`;
         const filePath = `${fileName}`;
@@ -313,5 +312,6 @@
     // Inicializar
     loadMessages();
 </script>
+
 </body>
 </html>
