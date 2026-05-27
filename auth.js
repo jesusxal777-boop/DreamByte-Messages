@@ -1,7 +1,8 @@
 const db = supabase.createClient(
-    'https://qynkgbgxavjgmvnskbsd.supabase.co', 
-    'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InF5bmtnYmd4YXZqZ212bnNrYnNkIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzk4NDQ5NzMsImV4cCI6MjA5NTQyMDk3M30.2lbtOLD-pgKYYrJiNsaOIsw3oM3jaZUgccDA-68Y6JI'
+    'https://ouidchcrmuyqtebnmvmw.supabase.co', 
+    'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im91aWRjaGNybXV5cXRlYm5tdm13Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzk4NTI4MjksImV4cCI6MjA5NTQyODgyOX0.q7yIx2ts-ooHBrSqlkDlpGBoBpEyg2WafMKX1XCsKHI'
 );
+
 
 async function loginUser(email, password) {
     const { data, error } = await db.auth.signInWithPassword({ email, password });
