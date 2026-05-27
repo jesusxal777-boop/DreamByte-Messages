@@ -3,59 +3,206 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>DreamByte Chat</title>
+    <title>DreamByte OS - Chat Network</title>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <style>
         * {
             box-sizing: border-box;
             margin: 0;
             padding: 0;
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            font-family: 'Segoe UI', -apple-system, BlinkMacSystemFont, Roboto, sans-serif;
         }
 
         body {
-            background: linear-gradient(135deg, #a1c4fd 0%, #c2e9fb 100%);
+            background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
             height: 100vh;
             display: flex;
             justify-content: center;
             align-items: center;
             overflow: hidden;
+            padding: 20px;
         }
 
-        /* Contenedor Estilo Cristal (Glassmorphism) */
-        .chat-container {
-            width: 90%;
-            max-width: 600px;
-            height: 85vh;
-            background: rgba(255, 255, 255, 0.45);
-            backdrop-filter: blur(12px);
-            -webkit-backdrop-filter: blur(12px);
-            border: 1px solid rgba(255, 255, 255, 0.7);
-            border-radius: 20px;
-            box-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.15),
-                        inset 0 1px 0 rgba(255, 255, 255, 0.6);
-            display: flex;
-            flex-direction: column;
-            overflow: hidden;
+        /* Utilidades de Pantallas Virtuales */
+        .view {
+            display: none !important;
+        }
+        .view.active {
+            display: flex !important;
         }
 
-        /* Cabecera Glossy */
-        .chat-header {
+        /* --- ESTILO CRISTAL (GLASSMORPHISM CORES) --- */
+        .glass-panel {
+            background: rgba(255, 255, 255, 0.4);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            border: 1px solid rgba(255, 255, 255, 0.6);
+            border-radius: 16px;
+            box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.15),
+                        inset 0 1px 1px rgba(255, 255, 255, 0.5);
+        }
+
+        .glossy-header {
             background: linear-gradient(to bottom, rgba(255,255,255,0.4) 0%, rgba(255,255,255,0.1) 50%, rgba(255,255,255,0) 51%, rgba(255,255,255,0.1) 100%);
-            border-bottom: 1px solid rgba(255, 255, 255, 0.4);
-            padding: 15px 20px;
-            text-align: center;
-            color: #1e40af;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.3);
             text-shadow: 0 1px 1px rgba(255, 255, 255, 0.8);
         }
 
-        .chat-header h2 {
-            font-weight: 600;
-            font-size: 1.4rem;
-            letter-spacing: 0.5px;
+        /* --- SECCIÓN 1: LOGIN / REGISTRO --- */
+        .auth-container {
+            width: 100%;
+            max-width: 400px;
+            padding: 30px;
+            flex-direction: column;
+            gap: 20px;
         }
 
-        /* Área de Mensajes */
+        .auth-header {
+            text-align: center;
+            color: #0b3c5d;
+        }
+
+        .auth-header h1 { font-size: 1.8rem; font-weight: 700; }
+        .auth-header p { font-size: 0.9rem; opacity: 0.8; }
+
+        .form-group {
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+        }
+
+        .form-group label {
+            font-size: 0.85rem;
+            font-weight: 600;
+            color: #0b3c5d;
+        }
+
+        input[type="text"], input[type="email"], input[type="password"] {
+            padding: 10px 14px;
+            border: 1px solid rgba(0,0,0,0.15);
+            border-radius: 8px;
+            background: rgba(255, 255, 255, 0.8);
+            outline: none;
+            font-size: 0.95rem;
+            transition: all 0.2s;
+        }
+
+        input:focus {
+            border-color: #007aff;
+            box-shadow: 0 0 8px rgba(0, 122, 255, 0.4);
+        }
+
+        .btn {
+            padding: 11px;
+            border: 1px solid rgba(0,0,0,0.1);
+            border-radius: 8px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.2s;
+            text-align: center;
+            font-size: 0.95rem;
+        }
+
+        .btn-primary {
+            background: linear-gradient(to bottom, #3498db 0%, #2980b9 100%);
+            color: white;
+            text-shadow: 0 -1px 0 rgba(0,0,0,0.2);
+        }
+        .btn-primary:active { background: linear-gradient(to bottom, #2980b9 0%, #3498db 100%); }
+
+        .btn-secondary {
+            background: linear-gradient(to bottom, #2ecc71 0%, #27ae60 100%);
+            color: white;
+            text-shadow: 0 -1px 0 rgba(0,0,0,0.2);
+        }
+
+        .auth-toggle {
+            text-align: center;
+            font-size: 0.85rem;
+            color: #0b3c5d;
+            cursor: pointer;
+            text-decoration: underline;
+        }
+
+        /* --- SECCIÓN 2: INTERFAZ DE CHAT PRINCIPAL --- */
+        .app-container {
+            width: 100%;
+            max-width: 1000px;
+            height: 90vh;
+            display: flex;
+            overflow: hidden;
+        }
+
+        /* Barra Lateral (Grupos y Canales) */
+        .sidebar {
+            width: 280px;
+            border-right: 1px solid rgba(255, 255, 255, 0.4);
+            display: flex;
+            flex-direction: column;
+            background: rgba(255, 255, 255, 0.2);
+        }
+
+        .sidebar-header {
+            padding: 15px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            color: #0b3c5d;
+        }
+
+        .room-list {
+            flex: 1;
+            overflow-y: auto;
+            padding: 10px;
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+        }
+
+        .room-item {
+            padding: 12px;
+            border-radius: 10px;
+            background: rgba(255,255,255,0.3);
+            cursor: pointer;
+            transition: background 0.2s;
+            color: #0b3c5d;
+            font-weight: 500;
+            border: 1px solid transparent;
+        }
+        .room-item:hover { background: rgba(255,255,255,0.5); }
+        .room-item.active {
+            background: rgba(255, 255, 255, 0.7);
+            border-color: rgba(255,255,255,0.9);
+            font-weight: bold;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+        }
+
+        .sidebar-footer {
+            padding: 15px;
+            border-top: 1px solid rgba(255, 255, 255, 0.3);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-size: 0.85rem;
+            color: #0b3c5d;
+            font-weight: bold;
+        }
+
+        /* Contenedor del Chat (Derecha) */
+        .main-chat {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            background: rgba(255, 255, 255, 0.1);
+        }
+
+        .chat-header {
+            padding: 15px 20px;
+            color: #0b3c5d;
+        }
+        .chat-header h2 { font-size: 1.2rem; }
+        .chat-header p { font-size: 0.8rem; opacity: 0.7; }
+
         .chat-messages {
             flex: 1;
             padding: 20px;
@@ -65,24 +212,23 @@
             gap: 12px;
         }
 
-        /* Burbujas de Mensaje */
+        /* Burbujas del Mensaje */
         .message {
             background: rgba(255, 255, 255, 0.7);
             border: 1px solid rgba(255, 255, 255, 0.8);
             padding: 10px 14px;
-            border-radius: 14px;
-            max-width: 80%;
+            border-radius: 12px;
+            max-width: 75%;
             align-self: flex-start;
-            box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+            box-shadow: 0 2px 4px rgba(0,0,0,0.04);
             animation: popIn 0.2s ease-out forwards;
         }
-
         .message.own {
             background: linear-gradient(to bottom, #74b9ff 0%, #0984e3 100%);
             color: white;
             border: 1px solid #0984e3;
             align-self: flex-end;
-            box-shadow: 0 2px 6px rgba(9, 132, 227, 0.3);
+            box-shadow: 0 2px 6px rgba(9, 132, 227, 0.25);
         }
 
         .message .username {
@@ -91,227 +237,357 @@
             margin-bottom: 4px;
             color: #2980b9;
         }
-
-        .message.own .username {
-            color: #e0f2fe;
-        }
-
-        .message img {
-            max-width: 100%;
-            border-radius: 8px;
-            margin-top: 5px;
-            border: 1px solid rgba(255,255,255,0.5);
-        }
+        .message.own .username { color: #e0f2fe; }
+        .message img { max-width: 100%; border-radius: 8px; margin-top: 5px; }
 
         /* Barra de Entrada */
         .chat-input-area {
             padding: 15px;
-            background: rgba(255, 255, 255, 0.3);
-            border-top: 1px solid rgba(255, 255, 255, 0.4);
+            background: rgba(255, 255, 255, 0.2);
+            border-top: 1px solid rgba(255, 255, 255, 0.3);
             display: flex;
             gap: 10px;
             align-items: center;
         }
 
-        .chat-input-area input[type="text"] {
-            flex: 1;
-            padding: 10px 15px;
-            border: 1px solid rgba(0,0,0,0.15);
-            border-radius: 20px;
-            outline: none;
-            background: rgba(255, 255, 255, 0.8);
-            transition: all 0.2s;
-        }
+        .chat-input-area input[type="text"] { flex: 1; border-radius: 20px; }
+        .file-btn { cursor: pointer; padding: 8px; font-size: 1.2rem; }
+        .file-btn input { display: none; }
 
-        .chat-input-area input[type="text"]:focus {
-            border-color: #3498db;
-            box-shadow: 0 0 8px rgba(52, 152, 219, 0.4);
-        }
-
-        /* Botón de Adjuntar Imagen */
-        .file-label {
-            cursor: pointer;
-            padding: 8px;
-            background: rgba(255,255,255,0.6);
-            border: 1px solid rgba(0,0,0,0.1);
-            border-radius: 50%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            transition: background 0.2s;
-        }
-        .file-label:hover { background: rgba(255,255,255,0.9); }
-        .file-label input { display: none; }
-
-        /* Botón Enviar Metálico/Glossy */
-        .btn-send {
-            padding: 10px 20px;
-            background: linear-gradient(to bottom, #2ecc71 0%, #27ae60 100%);
-            border: 1px solid #219653;
-            color: white;
-            font-weight: bold;
-            border-radius: 20px;
-            cursor: pointer;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-            text-shadow: 0 -1px 0 rgba(0,0,0,0.2);
-        }
-        .btn-send:active {
-            background: linear-gradient(to bottom, #27ae60 0%, #2ecc71 100%);
-        }
+        .btn-round { border-radius: 20px; padding: 8px 18px; }
 
         @keyframes popIn {
-            from { transform: scale(0.9); opacity: 0; }
+            from { transform: scale(0.96); opacity: 0; }
             to { transform: scale(1); opacity: 1; }
         }
     </style>
 </head>
 <body>
 
-<div class="chat-container">
-    <div class="chat-header">
-        <h2>DreamByte Studios Live Chat</h2>
-    </div>
-
-    <div class="chat-messages" id="chatMessages">
+    <div id="authView" class="view active glass-panel auth-container">
+        <div class="auth-header">
+            <h1 id="authTitle">DreamByte Network</h1>
+            <p id="authSubtitle">Inicia sesión para entrar a los servidores</p>
         </div>
 
-    <div class="chat-input-area">
-        <label class="file-label" title="Subir imagen">
-            📷
-            <input type="file" id="fileInput" accept="image/*">
-        </label>
-        <input type="text" id="messageInput" placeholder="Escribe un mensaje...">
-        <button class="btn-send" id="sendBtn">Enviar</button>
+        <div class="form-group" id="usernameGroup">
+            <label>Nombre de Usuario</label>
+            <input type="text" id="authUsername" placeholder="Ej: Kris_Dream">
+        </div>
+
+        <div class="form-group">
+            <label>Correo Electrónico</label>
+            <input type="email" id="authEmail" placeholder="tu@correo.com">
+        </div>
+
+        <div class="form-group">
+            <label>Contraseña</label>
+            <input type="password" id="authPassword" placeholder="••••••••">
+        </div>
+
+        <button class="btn btn-primary" id="authSubmitBtn">Iniciar Sesión</button>
+        <div class="auth-toggle" id="authToggle">¿No tienes cuenta? Regístrate aquí</div>
     </div>
-</div>
+
+
+    <div id="appView" class="view glass-panel app-container">
+        
+        <div class="sidebar">
+            <div class="sidebar-header glossy-header">
+                <h3>Salas / Grupos</h3>
+                <button class="btn btn-secondary" id="createRoomBtn" style="padding: 4px 8px; font-size: 0.8rem;">+ Nuevo</button>
+            </div>
+            <div class="room-list" id="roomList">
+                </div>
+            <div class="sidebar-footer glossy-header">
+                <span id="userTag">@Cargando...</span>
+                <span id="logoutBtn" style="cursor:pointer; text-decoration: underline; opacity: 0.7;">Salir</span>
+            </div>
+        </div>
+
+        <div class="main-chat">
+            <div class="chat-header glossy-header" id="currentRoomHeader">
+                <h2>Selecciona un grupo para comenzar</h2>
+                <p>Red de desarrollo de DreamByte Studios</p>
+            </div>
+
+            <div class="chat-messages" id="chatMessages">
+                </div>
+
+            <div class="chat-input-area" id="inputArea" style="display: none;">
+                <label class="file-btn" title="Adjuntar captura o imagen">
+                    📷
+                    <input type="file" id="fileInput" accept="image/*">
+                </label>
+                <input type="text" id="messageInput" placeholder="Escribe un mensaje en el grupo...">
+                <button class="btn btn-primary btn-round" id="sendBtn">Enviar</button>
+            </div>
+        </div>
+
+    </div>
 
 <script>
-    // 1. CONFIGURACIÓN DE SUPABASE (Credenciales listas)
+    // 1. CREDENCIALES CONFIGURADAS EN TU SUPABASE
     const SUPABASE_URL = 'https://qynkgbgxavjgmvnskbsd.supabase.co';
     const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InF5bmtnYmd4YXZqZ212bnNrYnNkIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzk4NDQ5NzMsImV4cCI6MjA5NTQyMDk3M30.2lbtOLD-pgKYYrJiNsaOIsw3oM3jaZUgccDA-68Y6JI';
     
     const supabase = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
-    // Asignar un nombre aleatorio o pedirlo al entrar
-    const myUsername = localStorage.getItem('chat_user') || 'User_' + Math.floor(Math.random() * 1000);
-    if(!localStorage.getItem('chat_user')) localStorage.setItem('chat_user', myUsername);
+    // Estado de la app
+    let isLoginMode = true;
+    let currentUser = null;
+    let userProfile = null;
+    let currentRoomId = null;
+    let messagesSubscription = null;
 
-    const messagesContainer = document.getElementById('chatMessages');
+    // DOM Elements
+    const authView = document.getElementById('authView');
+    const appView = document.getElementById('appView');
+    const authTitle = document.getElementById('authTitle');
+    const authSubtitle = document.getElementById('authSubtitle');
+    const usernameGroup = document.getElementById('usernameGroup');
+    const authSubmitBtn = document.getElementById('authSubmitBtn');
+    const authToggle = document.getElementById('authToggle');
+    
+    const roomList = document.getElementById('roomList');
+    const chatMessages = document.getElementById('chatMessages');
+    const currentRoomHeader = document.getElementById('currentRoomHeader');
+    const inputArea = document.getElementById('inputArea');
     const messageInput = document.getElementById('messageInput');
     const sendBtn = document.getElementById('sendBtn');
     const fileInput = document.getElementById('fileInput');
+    const userTag = document.getElementById('userTag');
 
-    // 2. CARGAR MENSAJES HISTÓRICOS
-    async function loadMessages() {
+    // 2. MANEJO DE VISTAS (LOGIN VS APP CHAT)
+    function toggleAuthMode() {
+        isLoginMode = !isLoginMode;
+        if (isLoginMode) {
+            authTitle.innerText = "DreamByte Network";
+            authSubtitle.innerText = "Inicia sesión para entrar a los servidores";
+            usernameGroup.style.display = "none";
+            authSubmitBtn.innerText = "Iniciar Sesión";
+            authToggle.innerText = "¿No tienes cuenta? Regístrate aquí";
+        } else {
+            authTitle.innerText = "Crear Cuenta Core";
+            authSubtitle.innerText = "Regístrate en la red central de DreamByte";
+            usernameGroup.style.display = "flex";
+            authSubmitBtn.innerText = "Registrarse y Crear Perfil";
+            authToggle.innerText = "¿Ya tienes cuenta? Conéctate";
+        }
+    }
+    authToggle.addEventListener('click', toggleAuthMode);
+    if(isLoginMode) usernameGroup.style.display = "none"; // Init
+
+    // 3. FLUJO DE AUTENTICACIÓN (AUTH)
+    authSubmitBtn.addEventListener('click', async () => {
+        const email = document.getElementById('authEmail').value.trim();
+        const password = document.getElementById('authPassword').value.trim();
+        const username = document.getElementById('authUsername').value.trim();
+
+        if(!email || !password) return alert('Por favor llena los campos esenciales.');
+
+        if (isLoginMode) {
+            // Login
+            const { data, error } = await supabase.auth.signInWithPassword({ email, password });
+            if (error) return alert('Error en login: ' + error.message);
+            checkSession();
+        } else {
+            // Registro
+            if(username.length < 3) return alert('El nombre de usuario debe tener mínimo 3 letras.');
+            const { data, error } = await supabase.auth.signUp({
+                email,
+                password,
+                options: { data: { username: username } } // Metadata que lee nuestro Trigger en el SQL
+            });
+            if (error) return alert('Error al registrar: ' + error.message);
+            alert('¡Registro exitoso! Ya puedes iniciar sesión.');
+            toggleAuthMode();
+        }
+    });
+
+    // Validar sesión activa
+    async function checkSession() {
+        const { data: { session } } = await supabase.auth.getSession();
+        if (session) {
+            currentUser = session.user;
+            // Buscar perfil extendido en la tabla profiles
+            const { data: profile } = await supabase
+                .from('profiles')
+                .select('*')
+                .eq('id', currentUser.id)
+                .single();
+            
+            userProfile = profile;
+            userTag.innerText = `@${profile ? profile.username : 'Sin_Perfil'}`;
+            
+            authView.classList.remove('active');
+            appView.classList.add('active');
+            
+            loadRooms();
+            listenRoomsRealtime();
+        } else {
+            authView.classList.add('active');
+            appView.classList.remove('active');
+        }
+    }
+
+    // Cierre de sesión
+    document.getElementById('logoutBtn').addEventListener('click', async () => {
+        await supabase.auth.signOut();
+        window.location.reload();
+    });
+
+    // 4. GESTIÓN DE SALAS / GRUPOS (ROOMS)
+    async function loadRooms() {
+        const { data, error } = await supabase.from('rooms').select('*').order('created_at', { ascending: true });
+        if (error) return console.error(error);
+        
+        roomList.innerHTML = '';
+        data.forEach(room => {
+            const div = document.createElement('div');
+            div.classList.add('room-item');
+            div.innerText = `📁 ${room.name}`;
+            div.dataset.id = room.id;
+            div.addEventListener('click', () => selectRoom(room));
+            roomList.appendChild(div);
+        });
+    }
+
+    // Escuchar si se crean salas nuevas en tiempo real
+    function listenRoomsRealtime() {
+        supabase.channel('public:rooms')
+            .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'rooms' }, () => {
+                loadRooms();
+            })
+            .subscribe();
+    }
+
+    // Crear Sala nueva
+    document.getElementById('createRoomBtn').addEventListener('click', async () => {
+        const roomName = prompt('Nombre del nuevo grupo/sala:');
+        if (!roomName || !roomName.trim()) return;
+
+        const { error } = await supabase.from('rooms').insert([{ name: roomName.trim(), created_by: currentUser.id }]);
+        if (error) alert('No se pudo crear la sala: ' + error.message);
+    });
+
+    // Seleccionar y entrar a un grupo
+    async function selectRoom(room) {
+        currentRoomId = room.id;
+        
+        // Estilo activo en sidebar
+        document.querySelectorAll('.room-item').forEach(el => el.classList.remove('active'));
+        document.querySelector(`[data-id="${room.id}"]`).classList.add('active');
+
+        currentRoomHeader.innerHTML = `<h2># ${escapeHTML(room.name)}</h2><p>ID de sala: ${room.id}</p>`;
+        inputArea.style.display = "flex";
+
+        // Desvincular suscripción anterior si existía
+        if (messagesSubscription) supabase.removeChannel(messagesSubscription);
+
+        // Cargar historial
+        loadMessages(room.id);
+        
+        // Suscribirse a los mensajes en tiempo real de esta sala concreta
+        messagesSubscription = supabase.channel(`room:${room.id}`)
+            .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'messages', filter: `room_id=eq.${room.id}` }, async (payload) => {
+                // Para renderizar el username correcto, buscamos el perfil del remitente
+                const { data: p } = await supabase.from('profiles').select('username').eq('id', payload.new.user_id).single();
+                appendMessage(payload.new, p ? p.username : 'Anon');
+                scrollToBottom();
+            })
+            .subscribe();
+    }
+
+    // 5. MANEJO DE MENSAJES
+    async function loadMessages(roomId) {
+        chatMessages.innerHTML = 'Cargando transmisiones...';
+        
+        // Traer mensajes uniendo el perfil (Query Relacional de Supabase)
         const { data, error } = await supabase
             .from('messages')
-            .select('*')
-            .order('created_at', { ascending: true })
-            .limit(50);
+            .select(`id, content, created_at, user_id, profiles(username)`)
+            .eq('room_id', roomId)
+            .order('created_at', { ascending: true });
 
-        if (error) return console.error('Error cargando mensajes:', error);
+        if (error) return chatMessages.innerText = 'Error al cargar mensajes.';
         
-        messagesContainer.innerHTML = '';
-        data.forEach(msg => appendMessage(msg));
+        chatMessages.innerHTML = '';
+        data.forEach(msg => {
+            appendMessage(msg, msg.profiles ? msg.profiles.username : 'Desconocido');
+        });
         scrollToBottom();
     }
 
-    // 3. RENDERIZAR UN MENSAJE EN PANTALLA
-    function appendMessage(msg) {
-        const isOwn = msg.profile_name === myUsername;
+    function appendMessage(msg, senderUsername) {
+        const isOwn = msg.user_id === currentUser.id;
         const msgDiv = document.createElement('div');
         msgDiv.classList.add('message');
         if (isOwn) msgDiv.classList.add('own');
 
-        // Validar si el contenido es un enlace a una imagen subida por nosotros
         let contentHTML = `<div>${escapeHTML(msg.content)}</div>`;
-        if (msg.content.startsWith('http') && (msg.content.includes('/storage/v1/object/public/'))) {
-            contentHTML = `<img src="${msg.content}" alt="Imagen adjunta" onload="scrollToBottom()">`;
+        if (msg.content.startsWith('http') && msg.content.includes('/storage/v1/object/public/')) {
+            contentHTML = `<img src="${msg.content}" alt="Imagen adjunta" style="max-width:240px;" onload="scrollToBottom()">`;
         }
 
         msgDiv.innerHTML = `
-            <div class="username">${escapeHTML(msg.profile_name)}</div>
+            <div class="username">${escapeHTML(senderUsername)}</div>
             ${contentHTML}
         `;
-        messagesContainer.appendChild(msgDiv);
+        chatMessages.appendChild(msgDiv);
     }
 
-    // 4. ESCUCHAR NUEVOS MENSAJES EN TIEMPO REAL
-    supabase
-        .channel('public:messages')
-        .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'messages' }, payload => {
-            appendMessage(payload.new);
-            scrollToBottom();
-        })
-        .subscribe();
+    async function sendCurrentMessage() {
+        const text = messageInput.value.trim();
+        if (!text || !currentRoomId) return;
 
-    // 5. FUNCIÓN PARA ENVIAR MENSAJES (TEXTO O URL DE IMAGEN)
-    async function sendMessage(contentText) {
-        if (!contentText.trim()) return;
+        const { error } = await supabase.from('messages').insert([
+            { room_id: currentRoomId, user_id: currentUser.id, content: text }
+        ]);
 
-        const { error } = await supabase
-            .from('messages')
-            .insert([{ profile_name: myUsername, content: contentText }]);
-
-        if (error) console.error('Error al enviar:', error);
-    }
-
-    // EVENTOS DE LA INTERFAZ
-    sendBtn.addEventListener('click', () => {
-        sendMessage(messageInput.value);
+        if (error) console.error('Error enviando:', error.message);
         messageInput.value = '';
-    });
+    }
 
-    messageInput.addEventListener('keypress', (e) => {
-        if (e.key === 'Enter') {
-            sendMessage(messageInput.value);
-            messageInput.value = '';
-        }
-    });
+    sendBtn.addEventListener('click', sendCurrentMessage);
+    messageInput.addEventListener('keypress', (e) => { if(e.key === 'Enter') sendCurrentMessage(); });
 
-    // 6. MANEJO DE SUBIDA DE IMÁGENES AL BUCKET
+    // 6. ADJUNTAR ARCHIVOS/IMÁGENES AL BUCKET
     fileInput.addEventListener('change', async () => {
         const file = fileInput.files[0];
-        if (!file) return;
+        if (!file || !currentRoomId) return;
 
         const fileExt = file.name.split('.').pop();
         const fileName = `${Date.now()}.${fileExt}`;
-        const filePath = `${fileName}`;
 
-        // Subir al bucket que creamos en el SQL
+        // Subida al Bucket 'chat-attachments'
         const { data, error } = await supabase.storage
             .from('chat-attachments')
-            .upload(filePath, file);
+            .upload(fileName, file);
 
-        if (error) {
-            alert('Error al subir imagen');
-            return console.error(error);
-        }
+        if (error) return alert('Fallo al subir archivo al servidor.');
 
-        // Obtener la URL pública del archivo subido
+        // URL Directa
         const { data: { publicUrl } } = supabase.storage
             .from('chat-attachments')
-            .getPublicUrl(filePath);
+            .getPublicUrl(fileName);
 
-        // Enviar la URL de la imagen como si fuera un mensaje del chat
-        sendMessage(publicUrl);
-        fileInput.value = ''; // Limpiar el input
+        // Almacenar la URL como mensaje en la base de datos
+        await supabase.from('messages').insert([
+            { room_id: currentRoomId, user_id: currentUser.id, content: publicUrl }
+        ]);
+
+        fileInput.value = '';
     });
 
-    // UTILIDADES
-    function scrollToBottom() {
-        messagesContainer.scrollTop = messagesContainer.scrollHeight;
-    }
-
+    // Auxiliares
+    function scrollToBottom() { chatMessages.scrollTop = chatMessages.scrollHeight; }
     function escapeHTML(str) {
-        return str.replace(/[&<>'"]/g, 
-            tag => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', "'": '&#39;', '"': '&quot;' }[tag] || tag)
-        );
+        return str.replace(/[&<>'"]/g, t => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', "'": '&#39;', '"': '&quot;' }[t] || t));
     }
 
-    // Inicializar
-    loadMessages();
+    // Autoejecutar al iniciar página
+    checkSession();
 </script>
-
 </body>
 </html>
