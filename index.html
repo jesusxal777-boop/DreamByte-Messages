@@ -5,10 +5,23 @@
     <title>DreamByte Network - Login</title>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <style>
-        body { background: linear-gradient(135deg, #3a7bd5, #3a6073); height: 100vh; display: flex; align-items: center; justify-content: center; font-family: sans-serif; }
-        .box { background: rgba(255,255,255,0.2); padding: 30px; border-radius: 15px; width: 300px; color: white; text-align: center; }
-        input { width: 100%; margin: 10px 0; padding: 10px; border-radius: 5px; border: none; }
-        button { width: 100%; padding: 10px; background: #0084ff; color: white; border: none; border-radius: 5px; cursor: pointer; }
+        :root {
+    --bg-gradient: linear-gradient(135deg, #3a7bd5 0%, #3a6073 100%);
+    --glass-bg: rgba(255, 255, 255, 0.22);
+    --glass-blur: blur(20px);
+    --glass-border: 1px solid rgba(255, 255, 255, 0.4);
+    --text-light: #ffffff;
+}
+* { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Segoe UI', sans-serif; }
+body { background: var(--bg-gradient); height: 100vh; display: flex; align-items: center; justify-content: center; padding: 20px; }
+.auth-box {
+    width: 100%; max-width: 380px; padding: 35px; background: var(--glass-bg); 
+    backdrop-filter: var(--glass-blur); border: var(--glass-border); 
+    border-radius: 16px; box-shadow: 0 8px 32px rgba(0,0,0,0.2); color: white;
+}
+input { width: 100%; padding: 12px; margin: 10px 0; border-radius: 8px; border: none; }
+button { width: 100%; padding: 12px; border-radius: 8px; border: none; background: #0084ff; color: white; cursor: pointer; font-weight: bold; }
+
     </style>
 </head>
 <body>
