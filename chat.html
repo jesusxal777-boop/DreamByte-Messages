@@ -2,41 +2,25 @@
 <html lang="es">
 <head>
     <meta charset="UTF-8">
-    <title>DreamByte OS - Chat Network</title>
+    <title>Chat</title>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-    <style>
-        /* (Mantén aquí el CSS que ya tenías, está perfecto) */
-    </style>
 </head>
 <body>
+    <div id="app">Cargando sistema...</div>
     <script>
-    const db = supabase.createClient('https://qynkgbgxavjgmvnskbsd.supabase.co', 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InF5bmtnYmd4YXZqZ212bnNrYnNkIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzk4NDQ5NzMsImV4cCI6MjA5NTQyMDk3M30.2lbtOLD-pgKYYrJiNsaOIsw3oM3jaZUgccDA-68Y6JI');
+        const db = supabase.createClient('https://qynkgbgxavjgmvnskbsd.supabase.co', 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InF5bmtnYmd4YXZqZ212bnNrYnNkIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzk4NDQ5NzMsImV4cCI6MjA5NTQyMDk3M30.2lbtOLD-pgKYYrJiNsaOIsw3oM3jaZUgccDA-68Y6JI');
 
-    async function init() {
-        try {
+        async function init() {
             const { data: { session } } = await db.auth.getSession();
-            if (!session) {
-                location.href = 'index.html';
-                return;
-            }
+            if (!session) return location.href = 'index.html';
             
-            // Si llegamos aquí, hay sesión
-            console.log("Sesión activa:", session.user.id);
-            await setupChat(session.user);
-        } catch (err) {
-            console.error("Error crítico de inicialización:", err);
-            document.body.innerHTML = "<h1>Error al cargar el sistema. Revisa la consola (F12).</h1>";
+            document.getElementById('app').innerHTML = "<h1>Bienvenido al Chat</h1><button id='out'>Salir</button>";
+            document.getElementById('out').onclick = () => db.auth.signOut().then(() => location.href='index.html');
+            
+            // Aquí llamarías a tus funciones de renderRooms y selectRoom...
+            console.log("Sistema cargado correctamente");
         }
-    }
-
-    async function setupChat(user) {
-        // Tu lógica de carga de canales...
-        console.log("Chat iniciado para:", user.id);
-        // ... el resto de tu código
-    }
-
-    init();
-</script>
-
+        init();
+    </script>
 </body>
 </html>
