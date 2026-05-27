@@ -4,590 +4,490 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>DreamByte OS - Chat Network</title>
+    <!-- Cliente de Supabase -->
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    
     <style>
-        * {
-            box-sizing: border-box;
-            margin: 0;
-            padding: 0;
-            font-family: 'Segoe UI', -apple-system, BlinkMacSystemFont, Roboto, sans-serif;
+        /* --- VARIABLES DE DISEÑO (Fácil de tunear) --- */
+        :root {
+            --bg-gradient: linear-gradient(135deg, #3a7bd5 0%, #3a6073 100%);
+            --glass-bg: rgba(255, 255, 255, 0.22);
+            --glass-blur: blur(20px);
+            --glass-border: 1px solid rgba(255, 255, 255, 0.4);
+            --glass-inner-shadow: inset 0 1px 2px rgba(255, 255, 255, 0.4);
+            --text-main: #0f2a4a;
+            --text-light: #ffffff;
+            --accent-blue: #0084ff;
+            --accent-green: #2ecc71;
+            --radius-main: 16px;
         }
 
+        /* --- ESTILOS BASE --- */
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Segoe UI', system-ui, sans-serif; }
         body {
-            background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+            background: var(--bg-gradient);
             height: 100vh;
             display: flex;
             justify-content: center;
             align-items: center;
-            overflow: hidden;
             padding: 20px;
+            color: var(--text-main);
         }
 
-        /* Utilidades de Pantallas Virtuales */
-        .view {
-            display: none !important;
-        }
-        .view.active {
-            display: flex !important;
+        /* Estructura de vistas abstracta */
+        .view { display: none !important; }
+        .view.active { display: flex !important; }
+
+        /* Mixin de Efecto Cristal */
+        .glass-card {
+            background: var(--glass-bg);
+            backdrop-filter: var(--glass-blur);
+            -webkit-backdrop-filter: var(--glass-blur);
+            border: var(--glass-border);
+            border-radius: var(--radius-main);
+            box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.2), var(--glass-inner-shadow);
         }
 
-        /* --- ESTILO CRISTAL (GLASSMORPHISM CORES) --- */
-        .glass-panel {
-            background: rgba(255, 255, 255, 0.4);
-            backdrop-filter: blur(16px);
-            -webkit-backdrop-filter: blur(16px);
-            border: 1px solid rgba(255, 255, 255, 0.6);
-            border-radius: 16px;
-            box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.15),
-                        inset 0 1px 1px rgba(255, 255, 255, 0.5);
+        .glossy-top {
+            background: linear-gradient(to bottom, rgba(255,255,255,0.3) 0%, rgba(255,255,255,0.05) 50%, rgba(255,255,255,0) 51%, rgba(255,255,255,0.05) 100%);
+            border-bottom: 1px solid rgba(255, 255, 255, 0.2);
         }
 
-        .glossy-header {
-            background: linear-gradient(to bottom, rgba(255,255,255,0.4) 0%, rgba(255,255,255,0.1) 50%, rgba(255,255,255,0) 51%, rgba(255,255,255,0.1) 100%);
-            border-bottom: 1px solid rgba(255, 255, 255, 0.3);
-            text-shadow: 0 1px 1px rgba(255, 255, 255, 0.8);
-        }
-
-        /* --- SECCIÓN 1: LOGIN / REGISTRO --- */
-        .auth-container {
+        /* --- VISTA 1: AUTHENTICATION --- */
+        .auth-box {
             width: 100%;
-            max-width: 400px;
-            padding: 30px;
+            max-width: 380px;
+            padding: 35px;
             flex-direction: column;
             gap: 20px;
         }
-
-        .auth-header {
-            text-align: center;
-            color: #0b3c5d;
-        }
-
-        .auth-header h1 { font-size: 1.8rem; font-weight: 700; }
-        .auth-header p { font-size: 0.9rem; opacity: 0.8; }
-
-        .form-group {
-            display: flex;
-            flex-direction: column;
-            gap: 6px;
-        }
-
-        .form-group label {
-            font-size: 0.85rem;
-            font-weight: 600;
-            color: #0b3c5d;
-        }
-
-        input[type="text"], input[type="email"], input[type="password"] {
-            padding: 10px 14px;
-            border: 1px solid rgba(0,0,0,0.15);
+        .auth-box h1 { text-align: center; font-size: 1.7rem; font-weight: 700; color: var(--text-light); text-shadow: 0 2px 4px rgba(0,0,0,0.2); }
+        .auth-box p { text-align: center; font-size: 0.9rem; color: var(--text-light); opacity: 0.8; margin-top: -10px; }
+        
+        .field { display: flex; flex-direction: column; gap: 5px; }
+        .field label { font-size: 0.8rem; font-weight: 600; color: var(--text-light); }
+        
+        input {
+            padding: 12px;
+            border: 1px solid rgba(0,0,0,0.1);
             border-radius: 8px;
-            background: rgba(255, 255, 255, 0.8);
+            background: rgba(255, 255, 255, 0.85);
             outline: none;
             font-size: 0.95rem;
-            transition: all 0.2s;
+            transition: all 0.2s ease;
         }
-
-        input:focus {
-            border-color: #007aff;
-            box-shadow: 0 0 8px rgba(0, 122, 255, 0.4);
-        }
+        input:focus { border-color: var(--accent-blue); box-shadow: 0 0 10px rgba(0, 132, 255, 0.5); background: #fff; }
 
         .btn {
-            padding: 11px;
-            border: 1px solid rgba(0,0,0,0.1);
+            padding: 12px;
+            border: none;
             border-radius: 8px;
             font-weight: bold;
             cursor: pointer;
-            transition: all 0.2s;
+            transition: transform 0.1s ease, filter 0.2s;
             text-align: center;
-            font-size: 0.95rem;
         }
+        .btn:active { transform: scale(0.98); }
+        .btn-blue { background: linear-gradient(to bottom, #4ba3e3, #1d72b4); color: white; border: 1px solid #16568a; }
+        .btn-green { background: linear-gradient(to bottom, #5cd68a, #27ae60); color: white; border: 1px solid #1e8449; }
+        
+        .toggle-link { text-align: center; font-size: 0.85rem; color: var(--text-light); cursor: pointer; text-decoration: underline; opacity: 0.9; }
 
-        .btn-primary {
-            background: linear-gradient(to bottom, #3498db 0%, #2980b9 100%);
-            color: white;
-            text-shadow: 0 -1px 0 rgba(0,0,0,0.2);
-        }
-        .btn-primary:active { background: linear-gradient(to bottom, #2980b9 0%, #3498db 100%); }
-
-        .btn-secondary {
-            background: linear-gradient(to bottom, #2ecc71 0%, #27ae60 100%);
-            color: white;
-            text-shadow: 0 -1px 0 rgba(0,0,0,0.2);
-        }
-
-        .auth-toggle {
-            text-align: center;
-            font-size: 0.85rem;
-            color: #0b3c5d;
-            cursor: pointer;
-            text-decoration: underline;
-        }
-
-        /* --- SECCIÓN 2: INTERFAZ DE CHAT PRINCIPAL --- */
-        .app-container {
+        /* --- VISTA 2: CHAT INTERFACE --- */
+        .app-window {
             width: 100%;
-            max-width: 1000px;
-            height: 90vh;
+            max-width: 1100px;
+            height: 85vh;
             display: flex;
             overflow: hidden;
         }
 
-        /* Barra Lateral (Grupos y Canales) */
+        /* Sidebar */
         .sidebar {
             width: 280px;
-            border-right: 1px solid rgba(255, 255, 255, 0.4);
+            border-right: 1px solid rgba(255, 255, 255, 0.2);
             display: flex;
             flex-direction: column;
-            background: rgba(255, 255, 255, 0.2);
+            background: rgba(255, 255, 255, 0.05);
         }
-
-        .sidebar-header {
-            padding: 15px;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            color: #0b3c5d;
-        }
-
-        .room-list {
-            flex: 1;
-            overflow-y: auto;
-            padding: 10px;
-            display: flex;
-            flex-direction: column;
-            gap: 6px;
-        }
-
-        .room-item {
-            padding: 12px;
+        .sidebar-nav { padding: 18px; display: flex; justify-content: space-between; align-items: center; color: var(--text-light); }
+        .sidebar-nav h3 { font-weight: 600; font-size: 1.1rem; }
+        
+        .scroller { flex: 1; overflow-y: auto; padding: 10px; display: flex; flex-direction: column; gap: 8px; }
+        
+        .item-room {
+            padding: 12px 15px;
             border-radius: 10px;
-            background: rgba(255,255,255,0.3);
+            background: rgba(255, 255, 255, 0.15);
             cursor: pointer;
-            transition: background 0.2s;
-            color: #0b3c5d;
+            transition: all 0.2s;
+            color: var(--text-light);
             font-weight: 500;
-            border: 1px solid transparent;
-        }
-        .room-item:hover { background: rgba(255,255,255,0.5); }
-        .room-item.active {
-            background: rgba(255, 255, 255, 0.7);
-            border-color: rgba(255,255,255,0.9);
-            font-weight: bold;
-            box-shadow: 0 2px 5px rgba(0,0,0,0.05);
-        }
-
-        .sidebar-footer {
-            padding: 15px;
-            border-top: 1px solid rgba(255, 255, 255, 0.3);
             display: flex;
-            justify-content: space-between;
             align-items: center;
-            font-size: 0.85rem;
-            color: #0b3c5d;
-            font-weight: bold;
-        }
-
-        /* Contenedor del Chat (Derecha) */
-        .main-chat {
-            flex: 1;
-            display: flex;
-            flex-direction: column;
-            background: rgba(255, 255, 255, 0.1);
-        }
-
-        .chat-header {
-            padding: 15px 20px;
-            color: #0b3c5d;
-        }
-        .chat-header h2 { font-size: 1.2rem; }
-        .chat-header p { font-size: 0.8rem; opacity: 0.7; }
-
-        .chat-messages {
-            flex: 1;
-            padding: 20px;
-            overflow-y: auto;
-            display: flex;
-            flex-direction: column;
-            gap: 12px;
-        }
-
-        /* Burbujas del Mensaje */
-        .message {
-            background: rgba(255, 255, 255, 0.7);
-            border: 1px solid rgba(255, 255, 255, 0.8);
-            padding: 10px 14px;
-            border-radius: 12px;
-            max-width: 75%;
-            align-self: flex-start;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.04);
-            animation: popIn 0.2s ease-out forwards;
-        }
-        .message.own {
-            background: linear-gradient(to bottom, #74b9ff 0%, #0984e3 100%);
-            color: white;
-            border: 1px solid #0984e3;
-            align-self: flex-end;
-            box-shadow: 0 2px 6px rgba(9, 132, 227, 0.25);
-        }
-
-        .message .username {
-            font-size: 0.75rem;
-            font-weight: bold;
-            margin-bottom: 4px;
-            color: #2980b9;
-        }
-        .message.own .username { color: #e0f2fe; }
-        .message img { max-width: 100%; border-radius: 8px; margin-top: 5px; }
-
-        /* Barra de Entrada */
-        .chat-input-area {
-            padding: 15px;
-            background: rgba(255, 255, 255, 0.2);
-            border-top: 1px solid rgba(255, 255, 255, 0.3);
-            display: flex;
             gap: 10px;
-            align-items: center;
         }
+        .item-room:hover { background: rgba(255, 255, 255, 0.3); }
+        .item-room.active { background: #ffffff; color: var(--text-main); font-weight: 700; box-shadow: 0 4px 12px rgba(0,0,0,0.1); }
 
-        .chat-input-area input[type="text"] { flex: 1; border-radius: 20px; }
-        .file-btn { cursor: pointer; padding: 8px; font-size: 1.2rem; }
-        .file-btn input { display: none; }
+        .sidebar-user { padding: 15px; border-top: 1px solid rgba(255, 255, 255, 0.2); display: flex; justify-content: space-between; color: var(--text-light); font-size: 0.85rem; font-weight: bold; }
 
-        .btn-round { border-radius: 20px; padding: 8px 18px; }
+        /* Chat Workspace */
+        .chat-space { flex: 1; display: flex; flex-direction: column; background: rgba(255, 255, 255, 0.02); }
+        .chat-space-header { padding: 18px 25px; color: var(--text-light); }
+        .chat-space-header h2 { font-size: 1.2rem; font-weight: 600; }
+        .chat-space-header p { font-size: 0.8rem; opacity: 0.7; margin-top: 2px; }
 
-        @keyframes popIn {
-            from { transform: scale(0.96); opacity: 0; }
-            to { transform: scale(1); opacity: 1; }
+        .msg-feed { flex: 1; padding: 25px; overflow-y: auto; display: flex; flex-direction: column; gap: 14px; }
+        
+        /* Burbujas */
+        .bubble {
+            background: rgba(255, 255, 255, 0.85);
+            padding: 12px 16px;
+            border-radius: 14px;
+            max-width: 65%;
+            align-self: flex-start;
+            box-shadow: 0 2px 6px rgba(0,0,0,0.05);
+            animation: slideUp 0.2s cubic-bezier(0.1, 1, 0.1, 1) forwards;
         }
+        .bubble.own {
+            background: linear-gradient(to bottom, #54a0ff, #0084ff);
+            color: white;
+            align-self: flex-end;
+            box-shadow: 0 4px 12px rgba(0, 132, 255, 0.3);
+        }
+        .bubble .meta-user { font-size: 0.72rem; font-weight: 700; color: #2e669a; margin-bottom: 4px; }
+        .bubble.own .meta-user { color: #d0e8ff; }
+        .bubble img { max-width: 100%; border-radius: 8px; margin-top: 6px; display: block; border: 1px solid rgba(0,0,0,0.1); }
+
+        /* Input Deck */
+        .input-deck { padding: 18px; display: flex; gap: 12px; align-items: center; background: rgba(255, 255, 255, 0.05); border-top: 1px solid rgba(255,255,255,0.1); }
+        .input-deck input[type="text"] { flex: 1; border-radius: 24px; padding: 12px 20px; border: none; }
+        .media-label { cursor: pointer; font-size: 1.4rem; padding: 4px; transition: transform 0.1s; }
+        .media-label:hover { transform: scale(1.1); }
+        .media-label input { display: none; }
+
+        @keyframes slideUp { from { transform: translateY(10px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
     </style>
 </head>
 <body>
 
-    <div id="authView" class="view active glass-panel auth-container">
-        <div class="auth-header">
-            <h1 id="authTitle">DreamByte Network</h1>
-            <p id="authSubtitle">Inicia sesión para entrar a los servidores</p>
-        </div>
+    <!-- VISTA AUTENTICACIÓN -->
+    <div id="viewAuth" class="view active glass-card auth-box">
+        <h1 id="txtAuthTitle">DreamByte Network</h1>
+        <p id="txtAuthSubtitle">Identifícate para sincronizar los canales</p>
 
-        <div class="form-group" id="usernameGroup">
-            <label>Nombre de Usuario</label>
-            <input type="text" id="authUsername" placeholder="Ej: Kris_Dream">
+        <div class="field" id="boxUsernameField">
+            <label>Nombre de Usuario público</label>
+            <input type="text" id="inUsername" placeholder="Ej: Dev_Kris">
         </div>
-
-        <div class="form-group">
+        <div class="field">
             <label>Correo Electrónico</label>
-            <input type="email" id="authEmail" placeholder="tu@correo.com">
+            <input type="email" id="inEmail" placeholder="correo@dreambyte.com">
         </div>
-
-        <div class="form-group">
+        <div class="field">
             <label>Contraseña</label>
-            <input type="password" id="authPassword" placeholder="••••••••">
+            <input type="password" id="inPassword" placeholder="••••••••">
         </div>
 
-        <button class="btn btn-primary" id="authSubmitBtn">Iniciar Sesión</button>
-        <div class="auth-toggle" id="authToggle">¿No tienes cuenta? Regístrate aquí</div>
+        <button class="btn btn-blue" id="btnAuthSubmit">Conectarse</button>
+        <div class="toggle-link" id="btnAuthToggle">¿Eres nuevo? Regístrate en el servidor</div>
     </div>
 
 
-    <div id="appView" class="view glass-panel app-container">
-        
-        <div class="sidebar">
-            <div class="sidebar-header glossy-header">
-                <h3>Salas / Grupos</h3>
-                <button class="btn btn-secondary" id="createRoomBtn" style="padding: 4px 8px; font-size: 0.8rem;">+ Nuevo</button>
+    <!-- VISTA CHAT COMPLETA -->
+    <div id="viewApp" class="view glass-card app-window">
+        <!-- Barra Lateral -->
+        <aside class="sidebar">
+            <div class="sidebar-nav glossy-top">
+                <h3>Canales Core</h3>
+                <button class="btn btn-green" id="btnNewRoom" style="padding: 6px 12px; font-size: 0.75rem;">+ Crear</button>
             </div>
-            <div class="room-list" id="roomList">
-                </div>
-            <div class="sidebar-footer glossy-header">
-                <span id="userTag">@Cargando...</span>
-                <span id="logoutBtn" style="cursor:pointer; text-decoration: underline; opacity: 0.7;">Salir</span>
+            <div class="scroller" id="containerRooms">
+                <!-- Salas inyectadas dinámicamente -->
             </div>
-        </div>
+            <div class="sidebar-user glossy-top">
+                <span id="txtUserTag">@...</span>
+                <span id="btnActionLogout" style="cursor:pointer; text-decoration:underline; opacity:0.8;">Desconectar</span>
+            </div>
+        </aside>
 
-        <div class="main-chat">
-            <div class="chat-header glossy-header" id="currentRoomHeader">
-                <h2>Selecciona un grupo para comenzar</h2>
-                <p>Red de desarrollo de DreamByte Studios</p>
+        <!-- Espacio Principal de Chat -->
+        <main class="chat-space">
+            <div class="chat-space-header glossy-top" id="containerRoomHeader">
+                <h2>Consola de Comunicación</h2>
+                <p>Selecciona un canal de la terminal de servidores para comenzar</p>
             </div>
 
-            <div class="chat-messages" id="chatMessages">
-                </div>
+            <div class="msg-feed" id="containerMessages">
+                <!-- Mensajes inyectados dinámicamente -->
+            </div>
 
-            <div class="chat-input-area" id="inputArea" style="display: none;">
-                <label class="file-btn" title="Adjuntar captura o imagen">
-                    📷
-                    <input type="file" id="fileInput" accept="image/*">
+            <div class="input-deck" id="deckControls" style="visibility: hidden;">
+                <label class="media-label" title="Subir archivo visual">
+                    🖼️
+                    <input type="file" id="inFile" accept="image/*">
                 </label>
-                <input type="text" id="messageInput" placeholder="Escribe un mensaje en el grupo...">
-                <button class="btn btn-primary btn-round" id="sendBtn">Enviar</button>
+                <input type="text" id="inMessage" placeholder="Escribe un comando o mensaje encriptado...">
+                <button class="btn btn-blue" id="btnSendMessage" style="border-radius:24px; padding:10px 22px;">Enviar</button>
             </div>
-        </div>
-
+        </main>
     </div>
 
 <script>
-    // 1. CREDENCIALES CONFIGURADAS EN TU SUPABASE
-    const SUPABASE_URL = 'https://qynkgbgxavjgmvnskbsd.supabase.co';
-    const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InF5bmtnYmd4YXZqZ212bnNrYnNkIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzk4NDQ5NzMsImV4cCI6MjA5NTQyMDk3M30.2lbtOLD-pgKYYrJiNsaOIsw3oM3jaZUgccDA-68Y6JI';
+    // --- 1. CAPA DE CONFIGURACIÓN & ESTADO GLOBAL ---
+    const CONFIG = {
+        url: 'https://qynkgbgxavjgmvnskbsd.supabase.co',
+        key: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InF5bmtnYmd4YXZqZ212bnNrYnNkIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzk4NDQ5NzMsImV4cCI6MjA5NTQyMDk3M30.2lbtOLD-pgKYYrJiNsaOIsw3oM3jaZUgccDA-68Y6JI'
+    };
     
-    const supabase = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+    const db = supabase.createClient(CONFIG.url, CONFIG.key);
 
-    // Estado de la app
-    let isLoginMode = true;
-    let currentUser = null;
-    let userProfile = null;
-    let currentRoomId = null;
-    let messagesSubscription = null;
+    let state = {
+        isLogin: true,
+        user: null,
+        profile: null,
+        activeRoomId: null,
+        subMessages: null
+    };
 
-    // DOM Elements
-    const authView = document.getElementById('authView');
-    const appView = document.getElementById('appView');
-    const authTitle = document.getElementById('authTitle');
-    const authSubtitle = document.getElementById('authSubtitle');
-    const usernameGroup = document.getElementById('usernameGroup');
-    const authSubmitBtn = document.getElementById('authSubmitBtn');
-    const authToggle = document.getElementById('authToggle');
-    
-    const roomList = document.getElementById('roomList');
-    const chatMessages = document.getElementById('chatMessages');
-    const currentRoomHeader = document.getElementById('currentRoomHeader');
-    const inputArea = document.getElementById('inputArea');
-    const messageInput = document.getElementById('messageInput');
-    const sendBtn = document.getElementById('sendBtn');
-    const fileInput = document.getElementById('fileInput');
-    const userTag = document.getElementById('userTag');
-
-    // 2. MANEJO DE VISTAS (LOGIN VS APP CHAT)
-    function toggleAuthMode() {
-        isLoginMode = !isLoginMode;
-        if (isLoginMode) {
-            authTitle.innerText = "DreamByte Network";
-            authSubtitle.innerText = "Inicia sesión para entrar a los servidores";
-            usernameGroup.style.display = "none";
-            authSubmitBtn.innerText = "Iniciar Sesión";
-            authToggle.innerText = "¿No tienes cuenta? Regístrate aquí";
-        } else {
-            authTitle.innerText = "Crear Cuenta Core";
-            authSubtitle.innerText = "Regístrate en la red central de DreamByte";
-            usernameGroup.style.display = "flex";
-            authSubmitBtn.innerText = "Registrarse y Crear Perfil";
-            authToggle.innerText = "¿Ya tienes cuenta? Conéctate";
-        }
-    }
-    authToggle.addEventListener('click', toggleAuthMode);
-    if(isLoginMode) usernameGroup.style.display = "none"; // Init
-
-    // 3. FLUJO DE AUTENTICACIÓN (AUTH)
-    authSubmitBtn.addEventListener('click', async () => {
-        const email = document.getElementById('authEmail').value.trim();
-        const password = document.getElementById('authPassword').value.trim();
-        const username = document.getElementById('authUsername').value.trim();
-
-        if(!email || !password) return alert('Por favor llena los campos esenciales.');
-
-        if (isLoginMode) {
-            // Login
-            const { data, error } = await supabase.auth.signInWithPassword({ email, password });
-            if (error) return alert('Error en login: ' + error.message);
-            checkSession();
-        } else {
-            // Registro
-            if(username.length < 3) return alert('El nombre de usuario debe tener mínimo 3 letras.');
-            const { data, error } = await supabase.auth.signUp({
-                email,
-                password,
-                options: { data: { username: username } } // Metadata que lee nuestro Trigger en el SQL
+    // --- 2. CAPA DE INTERACCIÓN DIRECTA CON SUPABASE (SERVICES) ---
+    const Api = {
+        async login(email, password) {
+            return await db.auth.signInWithPassword({ email, password });
+        },
+        async register(email, password, username) {
+            return await db.auth.signUp({
+                email, password, options: { data: { username } }
             });
-            if (error) return alert('Error al registrar: ' + error.message);
-            alert('¡Registro exitoso! Ya puedes iniciar sesión.');
-            toggleAuthMode();
+        },
+        async getProfile(uid) {
+            return await db.from('profiles').select('*').eq('id', uid).maybeSingle();
+        },
+        async fetchRooms() {
+            return await db.from('rooms').select('*').order('created_at', { ascending: true });
+        },
+        async createRoom(name, uid) {
+            return await db.from('rooms').insert([{ name, created_by: uid }]);
+        },
+        async fetchMessages(roomId) {
+            return await db.from('messages')
+                .select(`id, content, created_at, user_id, profiles(username)`)
+                .eq('room_id', roomId)
+                .order('created_at', { ascending: true });
+        },
+        async writeMessage(roomId, uid, content) {
+            return await db.from('messages').insert([{ room_id: roomId, user_id: uid, content }]);
+        },
+        async uploadFile(bucketPath, file) {
+            return await db.storage.from('chat-attachments').upload(bucketPath, file);
+        },
+        getPublicUrl(bucketPath) {
+            return db.storage.from('chat-attachments').getPublicUrl(bucketPath).data.publicUrl;
         }
-    });
+    };
 
-    // Validar sesión activa
-    async function checkSession() {
-        const { data: { session } } = await supabase.auth.getSession();
-        if (session) {
-            currentUser = session.user;
-            // Buscar perfil extendido en la tabla profiles
-            const { data: profile } = await supabase
-                .from('profiles')
-                .select('*')
-                .eq('id', currentUser.id)
-                .single();
+    // --- 3. CAPA DE RENDERIZADO Y CONTROL DE INTERFAZ (UI) ---
+    const UI = {
+        dom: {
+            authView: document.getElementById('viewAuth'),
+            appView: document.getElementById('viewApp'),
+            authTitle: document.getElementById('txtAuthTitle'),
+            authSubtitle: document.getElementById('txtAuthSubtitle'),
+            usernameField: document.getElementById('boxUsernameField'),
+            authSubmit: document.getElementById('btnAuthSubmit'),
+            authToggle: document.getElementById('btnAuthToggle'),
+            roomsContainer: document.getElementById('containerRooms'),
+            messagesContainer: document.getElementById('containerMessages'),
+            roomHeader: document.getElementById('containerRoomHeader'),
+            inputDeck: document.getElementById('deckControls'),
+            userTag: document.getElementById('txtUserTag'),
+            msgInput: document.getElementById('inMessage'),
+            sendBtn: document.getElementById('btnSendMessage'),
+            fileInput: document.getElementById('inFile')
+        },
+
+        init() {
+            this.dom.usernameField.style.display = "none"; // Por defecto login
             
-            userProfile = profile;
-            userTag.innerText = `@${profile ? profile.username : 'Sin_Perfil'}`;
-            
-            authView.classList.remove('active');
-            appView.classList.add('active');
-            
-            loadRooms();
-            listenRoomsRealtime();
-        } else {
-            authView.classList.add('active');
-            appView.classList.remove('active');
+            // Listeners de Auth
+            this.dom.authToggle.addEventListener('click', () => this.switchAuthMode());
+            this.dom.authSubmit.addEventListener('click', () => Actions.handleAuthSubmit());
+            document.getElementById('btnActionLogout').addEventListener('click', () => Actions.handleLogout());
+
+            // Listeners de App
+            document.getElementById('btnNewRoom').addEventListener('click', () => Actions.handleCreateRoom());
+            this.dom.sendBtn.addEventListener('click', () => Actions.handleSendMessage());
+            this.dom.msgInput.addEventListener('keypress', (e) => { if(e.key === 'Enter') Actions.handleSendMessage(); });
+            this.dom.fileInput.addEventListener('change', () => Actions.handleFileUpload());
+        },
+
+        switchAuthMode() {
+            state.isLogin = !state.isLogin;
+            if (state.isLogin) {
+                this.dom.authTitle.innerText = "DreamByte Network";
+                this.dom.authSubtitle.innerText = "Identifícate para sincronizar los canales";
+                this.dom.usernameField.style.display = "none";
+                this.dom.authSubmit.innerText = "Conectarse";
+                this.dom.authToggle.innerText = "¿Eres nuevo? Regístrate en el servidor";
+            } else {
+                this.dom.authTitle.innerText = "Crear Cuenta Core";
+                this.dom.authSubtitle.innerText = "Asigna una firma digital en DreamByte";
+                this.dom.usernameField.style.display = "flex";
+                this.dom.authSubmit.innerText = "Dar de Alta";
+                this.dom.authToggle.innerText = "¿Ya tienes cuenta? Inicia Sesión";
+            }
+        },
+
+        renderRooms(rooms) {
+            this.dom.roomsContainer.innerHTML = '';
+            rooms.forEach(room => {
+                const el = document.createElement('div');
+                el.classList.add('item-room');
+                if (room.id === state.activeRoomId) el.classList.add('active');
+                el.innerHTML = `<span>📁</span> <span>${this.escape(room.name)}</span>`;
+                el.addEventListener('click', () => Actions.handleSelectRoom(room));
+                this.dom.roomsContainer.appendChild(el);
+            });
+        },
+
+        renderMessages(messages) {
+            this.dom.messagesContainer.innerHTML = '';
+            messages.forEach(msg => this.appendSingleMessage(msg, msg.profiles?.username || 'Anon'));
+            this.scrollToBottom();
+        },
+
+        appendSingleMessage(msg, fallbackName) {
+            const isOwn = msg.user_id === state.user.id;
+            const card = document.createElement('div');
+            card.classList.add('bubble');
+            if (isOwn) card.classList.add('own');
+
+            let contentHTML = `<div>${this.escape(msg.content)}</div>`;
+            if (msg.content.startsWith('http') && msg.content.includes('/storage/v1/object/public/')) {
+                contentHTML = `<img src="${msg.content}" alt="Media" onload="UI.scrollToBottom()">`;
+            }
+
+            card.innerHTML = `
+                <div class="meta-user">${this.escape(fallbackName)}</div>
+                ${contentHTML}
+            `;
+            this.dom.messagesContainer.appendChild(card);
+        },
+
+        scrollToBottom() { this.dom.messagesContainer.scrollTop = this.dom.messagesContainer.scrollHeight; },
+        escape(str) { return str.replace(/[&<>'"]/g, t => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', "'": '&#39;', '"': '&quot;' }[t] || t)); }
+    };
+
+    // --- 4. CAPA DE ACCIONES DEL CONTROLADOR (CONTROLLER) ---
+    const Actions = {
+        async appBoot() {
+            const { data: { session } } = await db.auth.getSession();
+            if (session) {
+                state.user = session.user;
+                const { data: prof } = await Api.getProfile(state.user.id);
+                state.profile = prof;
+                
+                UI.dom.userTag.innerText = `@${prof?.username || 'User'}`;
+                UI.dom.authView.classList.remove('active');
+                UI.dom.appView.classList.add('active');
+                
+                this.refreshRoomsList();
+                this.listenRoomsGlobal();
+            } else {
+                UI.dom.authView.classList.add('active');
+                UI.dom.appView.classList.remove('active');
+            }
+        },
+
+        async handleAuthSubmit() {
+            const email = document.getElementById('inEmail').value.trim();
+            const password = document.getElementById('inPassword').value.trim();
+            const username = document.getElementById('inUsername').value.trim();
+
+            if (!email || !password) return alert('Completa las credenciales.');
+
+            if (state.isLogin) {
+                const { error } = await Api.login(email, password);
+                if (error) return alert('Fallo en login: ' + error.message);
+                this.appBoot();
+            } else {
+                if (username.length < 3) return alert('Usuario muy corto.');
+                const { error } = await Api.register(email, password, username);
+                if (error) return alert('Error de registro: ' + error.message);
+                alert('¡Firma creada! Ya puedes conectarte.');
+                UI.switchAuthMode();
+            }
+        },
+
+        async refreshRoomsList() {
+            const { data } = await Api.fetchRooms();
+            if (data) UI.renderRooms(data);
+        },
+
+        listenRoomsGlobal() {
+            db.channel('realtime-rooms')
+                .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'rooms' }, () => this.refreshRoomsList())
+                .subscribe();
+        },
+
+        async handleCreateRoom() {
+            const name = prompt('Nombre del nuevo canal de operaciones:');
+            if (!name || !name.trim()) return;
+            await Api.createRoom(name.trim(), state.user.id);
+        },
+
+        async handleSelectRoom(room) {
+            state.activeRoomId = room.id;
+            this.refreshRoomsList(); // Refresca clases activas visuales
+
+            UI.dom.roomHeader.innerHTML = `<h2># ${UI.escape(room.name)}</h2><p>Terminal activa ID: ${room.id}</p>`;
+            UI.dom.inputDeck.style.visibility = "visible";
+
+            if (state.subMessages) db.removeChannel(state.subMessages);
+
+            const { data } = await Api.fetchMessages(room.id);
+            if (data) UI.renderMessages(data);
+
+            state.subMessages = db.channel(`room-stream:${room.id}`)
+                .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'messages', filter: `room_id=eq.${room.id}` }, async (payload) => {
+                    const { data: sender } = await Api.getProfile(payload.new.user_id);
+                    UI.appendSingleMessage(payload.new, sender?.username || 'Anon');
+                    UI.scrollToBottom();
+                })
+                .subscribe();
+        },
+
+        async handleSendMessage() {
+            const txt = UI.dom.msgInput.value.trim();
+            if (!txt || !state.activeRoomId) return;
+
+            UI.dom.msgInput.value = '';
+            await Api.writeMessage(state.activeRoomId, state.user.id, txt);
+        },
+
+        async handleFileUpload() {
+            const file = UI.dom.fileInput.files[0];
+            if (!file || !state.activeRoomId) return;
+
+            const path = `${Date.now()}_${file.name.replace(/\s+/g, '_')}`;
+            const { error } = await Api.uploadFile(path, file);
+            if (error) return alert('Fallo al transmitir archivo.');
+
+            const url = Api.getPublicUrl(path);
+            await Api.writeMessage(state.activeRoomId, state.user.id, url);
+            UI.dom.fileInput.value = '';
+        },
+
+        async handleLogout() {
+            await db.auth.signOut();
+            window.location.reload();
         }
-    }
+    };
 
-    // Cierre de sesión
-    document.getElementById('logoutBtn').addEventListener('click', async () => {
-        await supabase.auth.signOut();
-        window.location.reload();
-    });
-
-    // 4. GESTIÓN DE SALAS / GRUPOS (ROOMS)
-    async function loadRooms() {
-        const { data, error } = await supabase.from('rooms').select('*').order('created_at', { ascending: true });
-        if (error) return console.error(error);
-        
-        roomList.innerHTML = '';
-        data.forEach(room => {
-            const div = document.createElement('div');
-            div.classList.add('room-item');
-            div.innerText = `📁 ${room.name}`;
-            div.dataset.id = room.id;
-            div.addEventListener('click', () => selectRoom(room));
-            roomList.appendChild(div);
-        });
-    }
-
-    // Escuchar si se crean salas nuevas en tiempo real
-    function listenRoomsRealtime() {
-        supabase.channel('public:rooms')
-            .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'rooms' }, () => {
-                loadRooms();
-            })
-            .subscribe();
-    }
-
-    // Crear Sala nueva
-    document.getElementById('createRoomBtn').addEventListener('click', async () => {
-        const roomName = prompt('Nombre del nuevo grupo/sala:');
-        if (!roomName || !roomName.trim()) return;
-
-        const { error } = await supabase.from('rooms').insert([{ name: roomName.trim(), created_by: currentUser.id }]);
-        if (error) alert('No se pudo crear la sala: ' + error.message);
-    });
-
-    // Seleccionar y entrar a un grupo
-    async function selectRoom(room) {
-        currentRoomId = room.id;
-        
-        // Estilo activo en sidebar
-        document.querySelectorAll('.room-item').forEach(el => el.classList.remove('active'));
-        document.querySelector(`[data-id="${room.id}"]`).classList.add('active');
-
-        currentRoomHeader.innerHTML = `<h2># ${escapeHTML(room.name)}</h2><p>ID de sala: ${room.id}</p>`;
-        inputArea.style.display = "flex";
-
-        // Desvincular suscripción anterior si existía
-        if (messagesSubscription) supabase.removeChannel(messagesSubscription);
-
-        // Cargar historial
-        loadMessages(room.id);
-        
-        // Suscribirse a los mensajes en tiempo real de esta sala concreta
-        messagesSubscription = supabase.channel(`room:${room.id}`)
-            .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'messages', filter: `room_id=eq.${room.id}` }, async (payload) => {
-                // Para renderizar el username correcto, buscamos el perfil del remitente
-                const { data: p } = await supabase.from('profiles').select('username').eq('id', payload.new.user_id).single();
-                appendMessage(payload.new, p ? p.username : 'Anon');
-                scrollToBottom();
-            })
-            .subscribe();
-    }
-
-    // 5. MANEJO DE MENSAJES
-    async function loadMessages(roomId) {
-        chatMessages.innerHTML = 'Cargando transmisiones...';
-        
-        // Traer mensajes uniendo el perfil (Query Relacional de Supabase)
-        const { data, error } = await supabase
-            .from('messages')
-            .select(`id, content, created_at, user_id, profiles(username)`)
-            .eq('room_id', roomId)
-            .order('created_at', { ascending: true });
-
-        if (error) return chatMessages.innerText = 'Error al cargar mensajes.';
-        
-        chatMessages.innerHTML = '';
-        data.forEach(msg => {
-            appendMessage(msg, msg.profiles ? msg.profiles.username : 'Desconocido');
-        });
-        scrollToBottom();
-    }
-
-    function appendMessage(msg, senderUsername) {
-        const isOwn = msg.user_id === currentUser.id;
-        const msgDiv = document.createElement('div');
-        msgDiv.classList.add('message');
-        if (isOwn) msgDiv.classList.add('own');
-
-        let contentHTML = `<div>${escapeHTML(msg.content)}</div>`;
-        if (msg.content.startsWith('http') && msg.content.includes('/storage/v1/object/public/')) {
-            contentHTML = `<img src="${msg.content}" alt="Imagen adjunta" style="max-width:240px;" onload="scrollToBottom()">`;
-        }
-
-        msgDiv.innerHTML = `
-            <div class="username">${escapeHTML(senderUsername)}</div>
-            ${contentHTML}
-        `;
-        chatMessages.appendChild(msgDiv);
-    }
-
-    async function sendCurrentMessage() {
-        const text = messageInput.value.trim();
-        if (!text || !currentRoomId) return;
-
-        const { error } = await supabase.from('messages').insert([
-            { room_id: currentRoomId, user_id: currentUser.id, content: text }
-        ]);
-
-        if (error) console.error('Error enviando:', error.message);
-        messageInput.value = '';
-    }
-
-    sendBtn.addEventListener('click', sendCurrentMessage);
-    messageInput.addEventListener('keypress', (e) => { if(e.key === 'Enter') sendCurrentMessage(); });
-
-    // 6. ADJUNTAR ARCHIVOS/IMÁGENES AL BUCKET
-    fileInput.addEventListener('change', async () => {
-        const file = fileInput.files[0];
-        if (!file || !currentRoomId) return;
-
-        const fileExt = file.name.split('.').pop();
-        const fileName = `${Date.now()}.${fileExt}`;
-
-        // Subida al Bucket 'chat-attachments'
-        const { data, error } = await supabase.storage
-            .from('chat-attachments')
-            .upload(fileName, file);
-
-        if (error) return alert('Fallo al subir archivo al servidor.');
-
-        // URL Directa
-        const { data: { publicUrl } } = supabase.storage
-            .from('chat-attachments')
-            .getPublicUrl(fileName);
-
-        // Almacenar la URL como mensaje en la base de datos
-        await supabase.from('messages').insert([
-            { room_id: currentRoomId, user_id: currentUser.id, content: publicUrl }
-        ]);
-
-        fileInput.value = '';
-    });
-
-    // Auxiliares
-    function scrollToBottom() { chatMessages.scrollTop = chatMessages.scrollHeight; }
-    function escapeHTML(str) {
-        return str.replace(/[&<>'"]/g, t => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', "'": '&#39;', '"': '&quot;' }[t] || t));
-    }
-
-    // Autoejecutar al iniciar página
-    checkSession();
+    // Lanzar ejecutor de interfaz y sesión al cargar el DOM
+    UI.init();
+    Actions.appBoot();
 </script>
 </body>
 </html>
