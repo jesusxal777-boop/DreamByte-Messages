@@ -2,12 +2,27 @@
 <html lang="es">
 <head>
     <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>DreamByte OS - Chat</title>
     <link rel="stylesheet" href="style.css">
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 </head>
 <body>
-    <div class="chat-container">
+
+    <div class="app-window" style="width: 100%; max-width: 900px; height: 80vh; background: rgba(255, 255, 255, 0.2); backdrop-filter: blur(20px); border: 1px solid rgba(255, 255, 255, 0.4); border-radius: 16px; display: flex; flex-direction: column; padding: 20px;">
+        
+        <h2 style="color: white; margin-bottom: 20px;">Consola de Comunicación</h2>
+
+        <div id="containerMessages" style="flex: 1; overflow-y: auto; color: white; display: flex; flex-direction: column; gap: 10px; margin-bottom: 20px; border-bottom: 1px solid rgba(255,255,255,0.2);">
+            </div>
+
+        <div style="display: flex; gap: 10px;">
+            <input type="text" id="inMessage" placeholder="Escribe un mensaje..." style="flex: 1;">
+            <button id="btnSendMessage">Enviar</button>
         </div>
+        
+        <button id="btnNewRoom" style="margin-top: 10px; background: #2ecc71;">Crear Nueva Sala</button>
+    </div>
 
     <script src="auth.js"></script>
     <script src="chat.js"></script>
