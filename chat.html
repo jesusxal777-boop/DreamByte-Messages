@@ -2,64 +2,14 @@
 <html lang="es">
 <head>
     <meta charset="UTF-8">
-    <title>DreamByte OS</title>
+    <link rel="stylesheet" href="style.css">
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-    <style>:root {
-    --bg-gradient: linear-gradient(135deg, #3a7bd5 0%, #3a6073 100%);
-    --glass-bg: rgba(255, 255, 255, 0.22);
-    --glass-blur: blur(20px);
-    --glass-border: 1px solid rgba(255, 255, 255, 0.4);
-    --text-light: #ffffff;
-}
-* { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Segoe UI', sans-serif; }
-body { background: var(--bg-gradient); height: 100vh; display: flex; align-items: center; justify-content: center; padding: 20px; }
-.auth-box {
-    width: 100%; max-width: 380px; padding: 35px; background: var(--glass-bg); 
-    backdrop-filter: var(--glass-blur); border: var(--glass-border); 
-    border-radius: 16px; box-shadow: 0 8px 32px rgba(0,0,0,0.2); color: white;
-}
-input { width: 100%; padding: 12px; margin: 10px 0; border-radius: 8px; border: none; }
-button { width: 100%; padding: 12px; border-radius: 8px; border: none; background: #0084ff; color: white; cursor: pointer; font-weight: bold; }
-</style>
 </head>
 <body>
-    <div class="app-window" style="width:100%; max-width:900px; height:80vh; background:rgba(255,255,255,0.2); border-radius:15px; padding:20px; display:flex; flex-direction:column;">
-        <div id="containerMessages" style="flex:1; overflow-y:auto; color:white; margin-bottom:10px;"></div>
-        <div style="display:flex; gap:10px;">
-            <input type="text" id="inMessage" placeholder="Escribe un mensaje...">
-            <button id="btnSendMessage">Enviar</button>
+    <div class="chat-container">
         </div>
-        <button id="btnNewRoom" style="margin-top:10px; background:#2ecc71;">Crear Nueva Sala</button>
-    </div>
 
-<script>
-    const db = supabase.createClient('URL', 'KEY');
-    
-    // Conectar botones cuando la página carga
-    document.addEventListener('DOMContentLoaded', () => {
-        document.getElementById('btnSendMessage').addEventListener('click', sendMessage);
-        document.getElementById('btnNewRoom').addEventListener('click', createRoom);
-    });
-
-    async function sendMessage() {
-        const input = document.getElementById('inMessage');
-        const content = input.value.trim();
-        if (!content) return;
-        
-        // Asumiendo que el ID de la sala global es fijo para probar
-        const { error } = await db.from('messages').insert([
-            { room_id: '00000000-0000-0000-0000-000000000000', content: content }
-        ]);
-        if (error) alert("Error: " + error.message);
-        else input.value = '';
-    }
-
-    async function createRoom() {
-        const name = prompt("Nombre del grupo:");
-        if (!name) return;
-        const { error } = await db.from('rooms').insert([{ name }]);
-        if (error) alert("Error al crear grupo");
-    }
-</script>
+    <script src="auth.js"></script>
+    <script src="chat.js"></script>
 </body>
 </html>
